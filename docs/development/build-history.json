@@ -94,5 +94,17 @@
     "package": "com.habby.kinjarun.offline.qa.heroes",
     "apkSha256": "24DCDBA57FFEB9324911340C1D3930C9F95778D699A9A35E861D101B4083214A",
     "nativeSha256": "b61184be02b6d09f5a387868f7143da108769a748eb1a985d894824c0378c1a4"
+  },
+  {
+    "buildId": "v129-combat-inventory-refresh",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "E0E58B2D2B19E88D15254EA1185F7B90B4CE69B54C5E22B2A2A758ECAE0BAA7D",
+    "nativeSha256": "aedf3550218b5c6f5dd09afd84e004b665d903ba982b347f8dc1a737170c2cc3"
+  },
+  {
+    "buildId": "v128-qa-combat-inventory-refresh",
+    "package": "com.habby.kinjarun.offline.qa.heroes",
+    "apkSha256": "57D87467C60B2942FFB05CC63AECD375B84605C473AD62419512DD5BD259BC75",
+    "nativeSha256": "57a21b90520a95b193f6b691bad989fe0cf4aef6fcf53e91c04b701230cbbdbd"
   }
 ]

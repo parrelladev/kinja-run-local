@@ -1,0 +1,60 @@
+{
+  "date": "2026-11-03",
+  "qa": "v128-qa-combat-inventory-refresh",
+  "normal": "v129-combat-inventory-refresh",
+  "apkSha256": "e0e58b2d2b19e88d15254ea1185f7b90b4ce69b54c5e22b2a2a758ecae0baa7d",
+  "nativeSha256": "aedf3550218b5c6f5dd09afd84e004b665d903ba982b347f8dc1a737170c2cc3",
+  "userApproval": "User reports immediate complete credit after finishing the match; accepts stage as resolved",
+  "instrumentalLines": [
+    "11-03 19:22:53.469 15257 15350 I KinjaOffline: Hero committed operation=0 id=1001 selected=1001 gold=3092->3092 item=0 count=0->0",
+    "11-03 19:23:21.054 15257 15350 I KinjaOffline: Hero committed operation=0 id=4002 selected=4002 gold=3092->3092 item=0 count=0->0",
+    "11-03 19:23:27.548 15257 15350 I KinjaOffline: Hero committed operation=2 id=1001 selected=4002 gold=3092->2922 item=6001 count=76->26",
+    "11-03 19:28:40.846 15257 15350 I KinjaOffline: Local EndGame stage=11 score=24428 buds=35 perfect=1 skills=10",
+    "11-03 19:28:40.847 15257 15350 I KinjaOffline: Local reward persisted ItemId=6001 Count=198",
+    "11-03 19:28:40.847 15257 15350 I KinjaOffline: Local reward persisted ItemId=20001 Count=3",
+    "11-03 19:28:40.847 15257 15350 I KinjaOffline: Local reward persisted ItemId=20005 Count=2",
+    "11-03 19:28:40.847 15257 15350 I KinjaOffline: Local reward persisted ItemId=20003 Count=1",
+    "11-03 19:28:40.848 15257 15350 I KinjaOffline: Local reward persisted ItemId=20002 Count=1",
+    "11-03 19:28:40.853 15257 15350 I KinjaOffline: Combat inventory before refresh item=6001 reward=198 saved=224 live=26",
+    "11-03 19:28:40.854 15257 15350 I KinjaOffline: Combat inventory before refresh item=20001 reward=3 saved=3 live=0",
+    "11-03 19:28:40.854 15257 15350 I KinjaOffline: Combat inventory before refresh item=20005 reward=2 saved=3 live=1",
+    "11-03 19:28:40.854 15257 15350 I KinjaOffline: Combat inventory before refresh item=20003 reward=1 saved=5 live=4",
+    "11-03 19:28:40.854 15257 15350 I KinjaOffline: Combat inventory before refresh item=20002 reward=1 saved=1 live=0",
+    "11-03 19:28:40.854 15257 15350 I KinjaOffline: Combat inventory reconciled item=6001 saved=224 live=224",
+    "11-03 19:28:40.854 15257 15350 I KinjaOffline: Combat inventory reconciled item=20001 saved=3 live=3",
+    "11-03 19:28:40.854 15257 15350 I KinjaOffline: Combat inventory reconciled item=20005 saved=3 live=3",
+    "11-03 19:28:40.855 15257 15350 I KinjaOffline: Combat inventory reconciled item=20003 saved=5 live=5",
+    "11-03 19:28:40.855 15257 15350 I KinjaOffline: Combat inventory reconciled item=20002 saved=1 live=1",
+    "11-03 19:29:08.882 15257 15350 I KinjaOffline: Hero committed operation=2 id=4002 selected=4002 gold=3407->3067 item=6001 count=224->134"
+  ],
+  "rawSha256": {
+    "before-update.png": "c0f2e0007bcf6e069aff6a8ad10a8ee895d1cc38c252bb638071bf0b315ba742",
+    "current.log": "1238bf9978c74e2e33c585a7bd9f8ceee015cbc6f0ec8ef40716b6342ec6a14b",
+    "current.png": "b05a7e10dc53411776d425b040bcd02405a4e5bc348fcb6a9cb16582c0ff0685",
+    "ItemManager_AddLocalItem.txt": "26e95be46fdd85a0b5d3c341508d6c73e975f244eb0dc433e07a54459fb436e7",
+    "ItemManager_GainItemHandle.txt": "97442906ab3e230e74d2c996538868206f78794c943aa0cf983939341913d2ad",
+    "ItemManager_HeroExp.txt": "04add48e129ac7575d3df3b95acc3355e4619864c6ee2cd1f3fe095a064a9046",
+    "ProtocolManager_AddItem.txt": "5f2abab2718b12a40fb8014d14c6ac270b3df10b83baf7a08e24f44badbf6327",
+    "ProtocolManager_AddItemArray.txt": "7087de7b512180fdc02f5bb39dd56093d16b5ac6164915f9a272a79e828c1995",
+    "v128-home.png": "3b5e893034aba00adcf24c1d3e853094019bc9d7cf034d1c2ba449eda098f4ce",
+    "v128-user-validation.log": "45f1ef609675bdc9d66190bfcd8e95b59bb71eed088edb2ffd33ffff10c2b50b",
+    "v129-package-after.txt": "775b784d37147332da666954e768432f6c36fdd23927b4ee3964d2661dee4f67",
+    "v129-package-before.txt": "5b10cd9480dec3c78fdb6645f286829bdec908a9284185144a3d71c8740fb085"
+  },
+  "normalQaAssistAbsent": true,
+  "rawRetention": "Removed after synthesis by authorized build cleanup",
+  "normalInstallation": {
+    "command": "adb install -r",
+    "firstInstallTime": "2026-11-03 19:31:06",
+    "lastUpdateTime": "2026-11-03 19:31:06",
+    "priorNormalSavePreservationVerified": false,
+    "freshInstallation": true,
+    "agentUninstallOrClear": false,
+    "normalLaunchOrGameplayValidated": false
+  },
+  "cleanup": {
+    "bytesBefore": 1891844076,
+    "bytesAfter": 375970459,
+    "bytesFreed": 1515873617
+  }
+}

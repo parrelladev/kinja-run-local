@@ -1,5 +1,10 @@
 # Auditoria funcional — build offline v31
 
+## Heróis e crédito de materiais — RESOLVIDOS, v129
+
+[Correção e evidências](docs/testing/COMBAT_INVENTORY_V129.md). Usuário identificou que comprar na loja liberava saldos de manuais/livros ganhos. Fim de partida salvava itens, mas chamava AddLocalItem/rota legada; loja recarregava saldo ET por OnItemInit. Correção aplica o inventário absoluto salvo por G2C_ItemInfo/OnItemInit e confere GetOwnItemNum, sem novo crédito. QA128/partida do usuário no Chapter6 confirmou198manuais: vivo26/salvo224→vivo224, mais quatro tipos de livros reconciliados; evolução4002 posterior consumiu90manuais224→134 sem compra intermediária observada. Usuário relatou crédito imediato correto e aprovou etapa como finalizada. Normalv129 compilada/assinada/instalada no audit1, sem assistência QA. FirstInstallTime/lastUpdateTime iguais19:31:06 indicam instalação nova, não migração; agente não executou uninstall/clear. Sem abertura/gameplay instrumental da normal nesta rodada. QA forte128 preservada. Nível/reciclagem/heróis e crédito de materiais resolvidos; tutorial permanece para próxima etapa.
+
+
 ## QA Heróis forte — v127; vitória com366 manuais
 
 [Build QA e evidências](docs/testing/HERO_QA_COMBAT_V127.md). Usuário autorizou assistência exclusiva QA: dano mínimo1000000 e dano comum recebido0, por define opt-in + filesDir exato do qa.heroes, sem alterar atributos/saves/economia. Update preservou perfil; normalv126 e biblioteca padrão intactos. Partida do usuário no Chapter13/region14 confirmou assistência, vitória,366manuais6001 e três pilhas de livros persistidos. Após relato de material ausente em Melhorar, reabertura do treino mostrou366/50 e4112ouro. Não reproduzida a ausência anterior; hipótese de refresh não confirmada, sem crédito duplicado/correção especulativa. Ainda falta consumo do manual ganho; tutorial não iniciado. Evidência atual supersede a ausência de drop observado na auditoria anterior.

@@ -842,17 +842,7 @@ bool fight_won(int stage, Roots& roots, bool& passed) {
     return true;
 }
 
-bool add_local_reward(Obj item_manager, int item_id, int count, const char* reward_id, Roots& roots,
-                      const char* way = "offline_fight") {
-    Klass manager_class = api.object_get_class(item_manager);
-    Method add = find_method(manager_class, "AddLocalItem", {"System.Int32", "System.Int32", "System.String", "System.String"});
-    if (!add) return false;
-    Obj way_text = roots.retain(api.string_new(way));
-    Obj reward = roots.retain(api.string_new(reward_id));
-    if (!way_text || !reward) return fail("Cannot allocate AddLocalItem string arguments");
-    void* args[] = {&item_id, &count, way_text, reward};
-    return invoke(add, item_manager, args, "ItemManager.AddLocalItem offline fight reward");
-}
+bool read_original_item_count(Obj item_manager, Klass item_class, int item_id, int& count, Roots& roots);
 
 Obj make_end_response(int region, bool passed, bool new_score, bool first_win, bool new_chapter,
                       int gold_reward, int diamond_reward,
@@ -930,13 +920,42 @@ bool persist_local_clear(int region, int64_t score, bool passed, bool& first_win
 
 bool apply_local_reward_items(const std::vector<std::pair<int, int>>& rewards, Roots& roots) {
     if (rewards.empty()) return true;
+    // persist_local_clear already credited the full saved balance. AddLocalItem
+    // routes to legacy S2C_Item_Add_Data, not the current ET item initialization.
+    // Reconcile absolute totals through the same original API used at login/shop;
+    // replaying this refresh must never credit the reward a second time.
+    const std::string saved = load_seed("seed_items.json");
     Klass item_class = find_class("", "ItemManager");
+    Klass model_class = find_class("ET", "G2C_ItemInfo");
+    Klass json_class = find_class("Newtonsoft.Json", "JsonConvert");
     Obj manager = item_class ? singleton(item_class, roots) : nullptr;
-    if (!manager) return false;
+    Method on_items = item_class ? find_method(item_class,"OnItemInit",{"ET.G2C_ItemInfo"}) : nullptr;
+    Method json = json_class ? find_method(json_class,"DeserializeObject",{"System.String","System.Type"}) : nullptr;
+    if (saved.empty() || !manager || !model_class || !on_items || !json)
+        return fail("Original combat inventory refresh APIs unavailable");
+    std::vector<std::pair<int,int>> expected;
     for (const auto& reward : rewards) {
-        const std::string reward_id = reward.first == 40001 ? "10013" : std::to_string(reward.first);
-        if (!add_local_reward(manager, reward.first, reward.second, reward_id.c_str(), roots)) return false;
+        int64_t total = -1;
+        int live = -1;
+        if (reward.first <= 0 || reward.second <= 0 ||
+            !json_get_item_count(saved,reward.first,total) || total < reward.second || total > INT32_MAX ||
+            !read_original_item_count(manager,item_class,reward.first,live,roots))
+            return fail("Invalid persisted combat reward balance");
+        expected.emplace_back(reward.first,static_cast<int>(total));
+        LOGI("Combat inventory before refresh item=%d reward=%d saved=%lld live=%d",
+             reward.first,reward.second,static_cast<long long>(total),live);
     }
+    Obj model = deserialize_local_payload(json,model_class,saved,roots);
+    void* args[] = {model};
+    if (!model || !invoke(on_items,manager,args,"ItemManager.OnItemInit combat reward refresh")) return false;
+    for (const auto& item : expected) {
+        int live = -1;
+        if (!read_original_item_count(manager,item_class,item.first,live,roots) || live != item.second)
+            return fail("Combat inventory callback did not apply saved reward total");
+        LOGI("Combat inventory reconciled item=%d saved=%d live=%d",item.first,item.second,live);
+    }
+    if (load_seed("seed_items.json") != saved)
+        return fail("Combat inventory refresh unexpectedly changed persisted balances");
     return true;
 }
 
