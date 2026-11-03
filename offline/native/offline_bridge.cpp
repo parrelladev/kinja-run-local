@@ -31,6 +31,7 @@
 #include <unordered_set>
 #include <vector>
 #include "fusion_batch_plan.h"
+#include "account_progression.h"
 
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "KinjaOffline", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "KinjaOffline", __VA_ARGS__)
@@ -1098,6 +1099,58 @@ bool get_hangup_rates(int& chapter, int& hour_gold, int& hour_exp, int& update_p
     return true;
 }
 
+bool account_progress(int level, int64_t exp, kinja::AccountProgress& result, Roots& roots) {
+    // Read the existing 1.9.1 table through IL2CPP; no copied curve or new RVAs.
+    Klass cfg_class = find_class("", "AccountLevelCfg");
+    Method all = cfg_class ? find_method(cfg_class, "GetAllCfg", {}) : nullptr;
+    Method get = cfg_class ? find_method(cfg_class, "GetCfg", {"System.Int32"}) : nullptr;
+    Obj dictionary = nullptr, boxed_count = nullptr;
+    if (!all || !get || !invoke(all, nullptr, nullptr, "AccountLevelCfg.GetAllCfg", &dictionary) || !dictionary)
+        return fail("Cannot resolve original account level table");
+    roots.retain(dictionary);
+    Method count = find_method(api.object_get_class(dictionary), "get_Count", {});
+    if (!count || !invoke(count, dictionary, nullptr, "AccountLevelCfg count", &boxed_count) || !boxed_count)
+        return false;
+    roots.retain(boxed_count);
+    void* count_value = api.object_unbox(boxed_count);
+    int n = count_value ? *static_cast<int32_t*>(count_value) : 0;
+    if (n < 1 || n > 1000) return fail("Invalid original account level table size");
+    std::vector<int> costs;
+    for (int32_t key = 1; key <= n; ++key) {
+        Obj cfg = nullptr;
+        void* args[] = {&key};
+        if (!invoke(get, nullptr, args, "AccountLevelCfg.GetCfg progression", &cfg) || !cfg)
+            return fail("Account level table is not contiguous");
+        roots.retain(cfg);
+        Klass klass = api.object_get_class(cfg);
+        Field level_field = api.class_get_field_from_name(klass, "level");
+        Field cost_field = api.class_get_field_from_name(klass, "cost_exp");
+        int configured_level = 0, cost = 0;
+        if (!level_field || !cost_field) return fail("Missing original account level fields");
+        api.field_get_value(cfg, level_field, &configured_level);
+        api.field_get_value(cfg, cost_field, &cost);
+        if (configured_level != key || cost <= 0) return fail("Invalid original account level row");
+        costs.push_back(cost);
+    }
+    return kinja::advance_account(level, exp, costs, result) || fail("Invalid saved account level/EXP");
+}
+
+bool repair_saved_account_progress(Roots& roots) {
+    std::string player = load_seed("seed_player.json");
+    int64_t level = 0, exp = -1;
+    if (!json_read_int(player, "Level", level) || !json_read_int(player, "Exp", exp) ||
+        level < 1 || level > INT32_MAX) return fail("Cannot read saved account progression");
+    kinja::AccountProgress next{};
+    if (!account_progress(static_cast<int>(level), exp, next, roots)) return false;
+    if (next.level == level && next.exp == exp) return true;
+    if (!json_set_int(player, "Level", next.level) || !json_set_int(player, "Exp", next.exp) ||
+        !write_file(files_dir + "/offline_save/seed_player.json", player))
+        return fail("Cannot persist normalized account progression");
+    LOGI("Local account progression repaired level=%lld->%d exp=%lld->%d; existing EXP only",
+         (long long)level, next.level, (long long)exp, next.exp);
+    return true;
+}
+
 bool grant_local_currency_reward(int gold, int exp, Roots& roots, int diamonds = 0) {
     Klass manager_class = find_class("", "ItemManager");
     Obj manager = manager_class ? singleton(manager_class, roots) : nullptr;
@@ -1134,12 +1187,43 @@ bool grant_local_currency_reward(int gold, int exp, Roots& roots, int diamonds =
     Method to_obscured = obscured_class ? find_method(obscured_class, "op_Implicit", {"System.Int32"}) : nullptr;
     Method set_gold = player_class ? find_method(player_class, "set_PlayerGold", {"CodeStage.AntiCheat.ObscuredTypes.ObscuredInt"}) : nullptr;
     Method set_exp = player_class ? find_method(player_class, "set_PlayerExp", {"CodeStage.AntiCheat.ObscuredTypes.ObscuredInt"}) : nullptr;
+    Method set_level = player_class ? find_method(player_class, "set_PlayerLevel", {"CodeStage.AntiCheat.ObscuredTypes.ObscuredInt"}) : nullptr;
+    Method get_level = player_class ? find_method(player_class, "get_PlayerLevel", {}) : nullptr;
+    Method decrypt = obscured_class ? find_method(obscured_class, "GetDecrypted", {}) : nullptr;
     Method set_diamonds = player_class ? find_method(player_class, "set_PlayerDiamond", {"CodeStage.AntiCheat.ObscuredTypes.ObscuredInt"}) : nullptr;
     Method sync = player_class ? find_method(player_class, "SyncValueToShow", {}) : nullptr;
-    if (!player || !obscured_class || !to_obscured || !set_gold || !set_exp || !set_diamonds || !sync)
+    if (!player || !obscured_class || !to_obscured || !set_gold || !set_exp || !set_diamonds || !sync ||
+        !set_level || !get_level || !decrypt)
         return fail("Cannot resolve original PlayerDataManager currency setters/refresh");
+    auto read_level = [&](int& level) -> bool {
+        Obj obscured = nullptr, boxed = nullptr;
+        if (!invoke(get_level, player, nullptr, "PlayerDataManager.get_PlayerLevel local progression", &obscured) || !obscured)
+            return false;
+        roots.retain(obscured);
+        if (!invoke(decrypt, obscured, nullptr, "ObscuredInt.GetDecrypted account level", &boxed) || !boxed)
+            return false;
+        roots.retain(boxed);
+        void* value = api.object_unbox(boxed);
+        if (!value) return false;
+        level = *static_cast<int32_t*>(value);
+        return level > 0;
+    };
+    int level_before = 0;
+    if (!read_level(level_before)) return fail("Cannot read live account level");
+    std::string player_json = load_seed("seed_player.json");
+    int64_t saved_gold = -1, saved_exp = -1, saved_diamonds = -1, saved_level = -1;
+    if (player_json.empty() || !json_read_int(player_json, "Coin", saved_gold) ||
+        !json_read_int(player_json, "Exp", saved_exp) || !json_read_int(player_json, "Diamond", saved_diamonds) ||
+        !json_read_int(player_json, "Level", saved_level))
+        return fail("Cannot read existing player fields before local currency mutation");
+    if (saved_gold != gold_before || saved_exp != exp_before || saved_diamonds != diamonds_before || saved_level != level_before)
+        return fail("Local player save differs from live currency/level; refusing to overwrite unrelated progress");
+    kinja::AccountProgress progress{level_before, exp_before};
+    if (exp < 0) return fail("Negative account EXP rewards are unsupported");
+    if (exp > 0 && !account_progress(level_before, static_cast<int64_t>(exp_before) + exp, progress, roots))
+        return false;
     const int32_t new_gold = gold_before + gold;
-    const int32_t new_exp = exp_before + exp;
+    const int32_t new_exp = progress.exp;
     const int32_t new_diamonds = diamonds_before + diamonds;
     auto set_value = [&](int32_t value, Method setter, const char* context) -> bool {
         void* conversion_args[] = {&value};
@@ -1152,11 +1236,20 @@ bool grant_local_currency_reward(int gold, int exp, Roots& roots, int diamonds =
         void* setter_args[] = {unboxed};
         return invoke(setter, player, setter_args, context);
     };
+    auto rollback = [&]() {
+        bool ok = set_value(gold_before, set_gold, "PlayerDataManager rollback gold");
+        ok = set_value(exp_before, set_exp, "PlayerDataManager rollback EXP") && ok;
+        ok = set_value(level_before, set_level, "PlayerDataManager rollback level") && ok;
+        ok = set_value(diamonds_before, set_diamonds, "PlayerDataManager rollback diamonds") && ok;
+        ok = invoke(sync, player, nullptr, "PlayerDataManager.SyncValueToShow rollback") && ok;
+        if (!ok) LOGE("Local currency/level rollback failed; restart required to reload unchanged save");
+    };
     if (!set_value(new_gold, set_gold, "PlayerDataManager.set_PlayerGold local reward") ||
         !set_value(new_exp, set_exp, "PlayerDataManager.set_PlayerExp local reward") ||
+        (progress.level != level_before && !set_value(progress.level, set_level, "PlayerDataManager.set_PlayerLevel local reward")) ||
         !set_value(new_diamonds, set_diamonds, "PlayerDataManager.set_PlayerDiamond local reward") ||
-        !invoke(sync, player, nullptr, "PlayerDataManager.SyncValueToShow local reward")) return false;
-    int gold_after = 0, exp_after = 0, diamonds_after = 0;
+        !invoke(sync, player, nullptr, "PlayerDataManager.SyncValueToShow local reward")) { rollback(); return false; }
+    int gold_after = 0, exp_after = 0, diamonds_after = 0, level_after = 0;
     const bool have_gold = read_count(101, gold_after, "ItemManager.GetOwnItemNum gold after local reward");
     const bool have_exp = read_count(104, exp_after, "ItemManager.GetOwnItemNum exp after local reward");
     const bool have_diamonds = read_count(102, diamonds_after, "ItemManager.GetOwnItemNum diamonds after local reward");
@@ -1164,28 +1257,31 @@ bool grant_local_currency_reward(int gold, int exp, Roots& roots, int diamonds =
          have_gold ? "" : "unavailable/", have_gold ? gold_after : 0,
          have_diamonds ? "" : "unavailable/", have_diamonds ? diamonds_after : 0,
          have_exp ? "" : "unavailable/", have_exp ? exp_after : 0,
-         gold_before + gold, diamonds_before + diamonds, exp_before + exp);
+         new_gold, new_diamonds, new_exp);
     if (!have_gold || !have_exp || !have_diamonds || gold_after != gold_before + gold ||
-        exp_after != exp_before + exp || diamonds_after != diamonds_before + diamonds)
+        exp_after != new_exp || diamonds_after != diamonds_before + diamonds ||
+        !read_level(level_after) || level_after != progress.level) {
+        rollback();
         return fail("Original currency setters did not apply the complete local reward");
-    std::string player_json = load_seed("seed_player.json");
-    int64_t saved_gold = -1, saved_exp = -1, saved_diamonds = -1;
-    if (player_json.empty() || !json_read_int(player_json, "Coin", saved_gold) ||
-        !json_read_int(player_json, "Exp", saved_exp) || !json_read_int(player_json, "Diamond", saved_diamonds))
-        return fail("Cannot read existing local Coin/Exp/Diamond fields before local reward persistence");
-    if (saved_gold != gold_before || saved_exp != exp_before || saved_diamonds != diamonds_before)
-        return fail("Local player save differs from live currency; refusing to overwrite unrelated progress");
+    }
     if (!json_set_int(player_json, "Coin", gold_after) || !json_set_int(player_json, "Exp", exp_after) ||
+        !json_set_int(player_json, "Level", level_after) ||
         !json_set_int(player_json, "Diamond", diamonds_after) ||
         !write_file(files_dir + "/offline_save/seed_player.json", player_json)) {
-        set_value(gold_before, set_gold, "PlayerDataManager rollback gold after local save failure");
-        set_value(exp_before, set_exp, "PlayerDataManager rollback exp after local save failure");
-        set_value(diamonds_before, set_diamonds, "PlayerDataManager rollback diamonds after local save failure");
-        invoke(sync, player, nullptr, "PlayerDataManager.SyncValueToShow rollback after local save failure");
+        rollback();
         return fail("Cannot persist currency to the existing local player save");
     }
     LOGI("Persisted local currency without replacing other player fields: Coin=%d Diamond=%d Exp=%d",
          gold_after, diamonds_after, exp_after);
+    if (level_after != level_before) {
+        LOGI("Local account level advanced level=%d->%d exp=%d+%d->%d", level_before, level_after, exp_before, exp, exp_after);
+        Klass json_class = find_class("Newtonsoft.Json", "JsonConvert");
+        Method json_method = json_class ? find_method(json_class, "DeserializeObject", {"System.String", "System.Type"}) : nullptr;
+        // Currency is already committed. A menu-refresh failure must not turn
+        // this into a failed reward that can be claimed a second time.
+        if (!json_method || !set_local_opening_functions(json_method, roots))
+            LOGE("Account level saved; menu refresh requires restart: %s", last_error.c_str());
+    }
     return true;
 }
 
@@ -3888,6 +3984,9 @@ bool initialize_original_player(Obj pdm) {
     if (!repair_saved_chapter_progress()) return false;
     // Persist missed clear rewards before deserializing the normal seed models.
     if (!repair_saved_chapter2_rewards()) return false;
+    // Normalize existing earned EXP before creating the original player model.
+    // Idempotent: retain only the unspent balance and never demote legacy levels.
+    if (!repair_saved_account_progress(roots)) return false;
     if (!enable_offline_perks()) return false;
 #ifdef KINJA_OFFLINE_QA_MAX_PROFILE
     if (!apply_qa_max_profile()) return fail("Could not prepare the authorized QA resource profile");

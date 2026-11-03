@@ -1,5 +1,9 @@
 # Guia de manutenção do Kinja Run offline
 
+## Nível da conta — correção v112 em avaliação
+
+[Relatório e limites](docs/testing/ACCOUNT_LEVEL_V112.md). Imagem do usuário mostra nível 2 com 5838/2000 EXP. O crédito local salvava EXP sem avançar nível. V112 usa `AccountLevelCfg` original para consumir os custos, preservar excedente e atualizar Level/Exp juntos; também normaliza excesso de EXP no login, sem conceder recursos. Caso isolado 2/5838 → 4/838, idempotência e todos os limites passaram. ARM64 compilado; audit1 do BlueStacks atualizado e home preservada, sem mudança no celular/acervo. Passagem de nível em gameplay e migração do save avançado ainda não observadas. EXP de combate permanece sem fórmula implementada. Outros bugs aguardam aprovação do usuário após este item.
+
 ## BlueStacks — execução da v111 relatada pelo usuário
 
 Coleta posterior em 03/11/2026: ADB conectado a127.0.0.1:6610, APK audit1 instalado confere com SHA256 da v111; abertura/home observadas e reinício carregou a baseline1500/0/0,inventário0. Android16/API36 com suporte ARM64 anunciado. Rede ativa por Ethernet virtual: execução sem rede e refresh pós-vitória permanecem pendentes. Evidências e limites em [BLUESTACKS.md](docs/testing/BLUESTACKS.md). O parágrafo seguinte registra o relato anterior à coleta instrumental.

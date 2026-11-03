@@ -1,5 +1,9 @@
 # Auditoria funcional — build offline v31
 
+## Nível da conta — v112, 03/11/2026
+
+Imagem da v111 no celular: nível 2, 5838/2000 EXP e Capítulo 6. Confirmado no bridge: crédito de EXP não alterava nível. [Correção, hashes, testes e limitações](docs/testing/ACCOUNT_LEVEL_V112.md). Planejador com tabela original passou caso 2/5838 → 4/838 e os 199 limites. V112 instalada somente no audit1 do BlueStacks com `install -r`, mesmo certificado e firstInstallTime; curva original lida com sucesso, initialized/home preservados em 1500/0/0, nível 1. Não houve save avançado disponível como arquivo, concessão artificial ou teste consumidor. Subida visual e persistência de nível elevado permanecem pendentes; não equivale a validação completa de gameplay. Sem correção dos outros bugs nesta rodada.
+
 ## BlueStacks — execução da v111 relatada pelo usuário
 
 Coleta posterior em 03/11/2026: identidade do APK audit1/v111 conferida por SHA256 via ADB; bootstrap/home observados. Reinício PID3724→4487 recarregou1500ouro/0gemas/0EXP/inventário0. Sem transações ou partida nesta coleta. Rede padrão via Ethernet virtual ainda ativa; offline completo e refresh após vitória não validados. [Ambiente, evidências e limites](docs/testing/BLUESTACKS.md). O relato abaixo antecede esta observação instrumental.
