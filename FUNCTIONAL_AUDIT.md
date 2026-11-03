@@ -1,5 +1,10 @@
 # Auditoria funcional — build offline v31
 
+## Heróis — v126 em avaliação
+
+[Contrato e testes](docs/testing/HEROES_V126.md), [síntese/hashes](docs/testing/HEROES_V126.json). Usuário confirmou falha tanto em nível quanto estrelas. Corrigidos Star0 legado (mínimo original1, sem custos), desbloqueio107 conforme Chapter5 e operações locais de seleção/obtenção por fragmentos/nível/estrela. Tabelas e handler IL2CPP originais, journal/fsync/readback/rollback; nenhuma escrita de offsets gerenciados. QA BlueStacks validou seleção4002,1001 nível1→2 (170ouro+50materiais), estrela1→2 (120fragmentos/teto30), obtenção4003 (80fragmentos) e persistência/reseleção após update/restart. Biblioteca final v125 QA idêntica à v126 normal; contagem dos três registros conferida. V126 install-r preservou firstInstallTime e home normal1500/0/0/Nv1/Chapter1, menus bloqueados; sem consumo no perfil normal. Combate, máximos/talentos e falhas de journal injetadas não validados. Nível da conta/reciclagem individual aprovados pelo usuário; tutorial aguarda aprovação de heróis. Não repetir extração do acervo externo.
+
+
 ## Reciclagem no detalhe — v119 QA/v120 normal, 03/11/2026
 
 [Relatório](docs/testing/EQUIPMENT_RECYCLE_V120.md). Bug de nível aprovado pelo usuário como resolvido; foco somente no segundo bug individual. V118 reproduziu NRE no helper ET BreakEquip. V119 confirmou devolução original400ouro/4livros e peça5→1, depois200/2 e peça equipada3→1 com slot preservado. Tudo com peças artificiais em package separado qa.equipbreak. Restart confirmou2100ouro/6livros/3peças nível1 e botão de reciclar ausente; callbacks/readbacks concordantes. V120 normal usa biblioteca idêntica e seeds normais. Sem mudança no celular, itens reais ou outros bugs. Recuperação sob falha, outras faixas e lote não têm teste positivo; correção individual aguarda avaliação do usuário.

@@ -1,5 +1,14 @@
 # Guia de manutenção do Kinja Run offline
 
+## Retenção atual — v126
+
+Limpeza final de03/11/2026 com `clean-builds.ps1 -KeepBuildId v126-local-heroes`: build4947564667→375970459bytes; liberados4571594208bytes. Restam somente APK assinado v126 e relatório de assinatura; hash reconferido `D3C84387656D17BF3CB5FE2E8E6DFCB98F67D04419B7B264474CB775DD02900B`. Acervo externo/dependências/chave/senha/saves Android preservados. Histórico pequeno atualizado; capturas/logs v121–v126 removidos após síntese versionada. A retenção v120 abaixo é histórica.
+
+## Heróis — v126 em avaliação
+
+[Contrato e testes](docs/testing/HEROES_V126.md), [síntese/hashes](docs/testing/HEROES_V126.json). Usuário confirmou falha tanto em nível quanto estrelas. Corrigidos Star0 legado (mínimo original1, sem custos), desbloqueio107 conforme Chapter5 e operações locais de seleção/obtenção por fragmentos/nível/estrela. Tabelas e handler IL2CPP originais, journal/fsync/readback/rollback; nenhuma escrita de offsets gerenciados. QA BlueStacks validou seleção4002,1001 nível1→2 (170ouro+50materiais), estrela1→2 (120fragmentos/teto30), obtenção4003 (80fragmentos) e persistência/reseleção após update/restart. Biblioteca final v125 QA idêntica à v126 normal; contagem dos três registros conferida. V126 install-r preservou firstInstallTime e home normal1500/0/0/Nv1/Chapter1, menus bloqueados; sem consumo no perfil normal. Combate, máximos/talentos e falhas de journal injetadas não validados. Nível da conta/reciclagem individual aprovados pelo usuário; tutorial aguarda aprovação de heróis. Não repetir extração do acervo externo.
+
+
 ## Retenção de builds — somente a versão normal atual
 
 Em 03/11/2026, o usuário autorizou apagar builds anteriores/intermediários e manter somente a build atual. `tools/workspace/clean-builds.ps1 -KeepBuildId v120-local-equipment-recycle` reduziu `build` de6835539684 para375954075 bytes (6459585609 liberados). Restaram o APK assinado v120 e o relatório de assinatura; SHA256 `568E74C12A54597D86C79DB94368B2A335F386D816A32C0D0E953F546646C60D` reconferido. O acervo externo, dependências, chave/senha e saves Android não foram alterados.

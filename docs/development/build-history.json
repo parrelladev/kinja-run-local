@@ -1,8 +1,8 @@
 [
   {
-    "buildId": "v114-qa-exp-reward-boundary",
-    "package": "com.habby.kinjarun.offline.qa.expreward",
-    "apkSha256": "051C980EF4C4F503F681A484A8AF65F1BE48181F969A60C62D4E61B6CADC507D",
+    "buildId": "v112-account-exp-level-progression",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "A2978E847596B31A7691D5E954D49D328A3A7B81383F814FAF051FB6752AC2B1",
     "nativeSha256": "a1f278823cadd42dd86c84d10fac9a471a05ea7341181ddaf8acc8e0b422754d"
   },
   {
@@ -12,27 +12,21 @@
     "nativeSha256": "a1f278823cadd42dd86c84d10fac9a471a05ea7341181ddaf8acc8e0b422754d"
   },
   {
-    "buildId": "v112-account-exp-level-progression",
-    "package": "com.habby.kinjarun.offline.audit1",
-    "apkSha256": "A2978E847596B31A7691D5E954D49D328A3A7B81383F814FAF051FB6752AC2B1",
+    "buildId": "v114-qa-exp-reward-boundary",
+    "package": "com.habby.kinjarun.offline.qa.expreward",
+    "apkSha256": "051C980EF4C4F503F681A484A8AF65F1BE48181F969A60C62D4E61B6CADC507D",
     "nativeSha256": "a1f278823cadd42dd86c84d10fac9a471a05ea7341181ddaf8acc8e0b422754d"
+  },
+  {
+    "buildId": "v115-qa-exp-reward-unboxed",
+    "package": "com.habby.kinjarun.offline.qa.expreward",
+    "apkSha256": "0BBE051700FCFF6E5864E26E457009099F364CA195F1A465A7CFEA728C2C3B0F",
+    "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
   },
   {
     "buildId": "v116-account-exp-unboxed-level",
     "package": "com.habby.kinjarun.offline.audit1",
     "apkSha256": "3F51518B756096B19B32E25C7FA5B1EAC10AE31316A4E11AF6761E5445500BC6",
-    "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
-  },
-  {
-    "buildId": "v120-local-equipment-recycle",
-    "package": "com.habby.kinjarun.offline.audit1",
-    "apkSha256": "568E74C12A54597D86C79DB94368B2A335F386D816A32C0D0E953F546646C60D",
-    "nativeSha256": "86644fb763bacb75145c402f8f94c91562e835c4cb319f75c70ab7e71fda41dc"
-  },
-  {
-    "buildId": "v118-qa-recycle-reproduction",
-    "package": "com.habby.kinjarun.offline.qa.equipbreak",
-    "apkSha256": "ED28C31E4E285C412F4A259916B82859F60CDA70B09237C9E838A929D69F073A",
     "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
   },
   {
@@ -42,15 +36,57 @@
     "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
   },
   {
+    "buildId": "v118-qa-recycle-reproduction",
+    "package": "com.habby.kinjarun.offline.qa.equipbreak",
+    "apkSha256": "ED28C31E4E285C412F4A259916B82859F60CDA70B09237C9E838A929D69F073A",
+    "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
+  },
+  {
     "buildId": "v119-local-equipment-recycle-qa",
     "package": "com.habby.kinjarun.offline.qa.equipbreak",
     "apkSha256": "AE23E343A6D36012ADA89E9E94B00E382E5089C7651B1AE88C71759130DB727B",
     "nativeSha256": "86644fb763bacb75145c402f8f94c91562e835c4cb319f75c70ab7e71fda41dc"
   },
   {
-    "buildId": "v115-qa-exp-reward-unboxed",
-    "package": "com.habby.kinjarun.offline.qa.expreward",
-    "apkSha256": "0BBE051700FCFF6E5864E26E457009099F364CA195F1A465A7CFEA728C2C3B0F",
-    "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
+    "buildId": "v120-local-equipment-recycle",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "568E74C12A54597D86C79DB94368B2A335F386D816A32C0D0E953F546646C60D",
+    "nativeSha256": "86644fb763bacb75145c402f8f94c91562e835c4cb319f75c70ab7e71fda41dc"
+  },
+  {
+    "buildId": "v121-qa-hero-reproduction",
+    "package": "com.habby.kinjarun.offline.qa.heroes",
+    "apkSha256": "9E9FCBB79EBFEE2878DAC9B9E8AAD6E9C4F7E188E53407BE11B3BB79EAAD4DCD",
+    "nativeSha256": "86644fb763bacb75145c402f8f94c91562e835c4cb319f75c70ab7e71fda41dc"
+  },
+  {
+    "buildId": "v126-local-heroes",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "D3C84387656D17BF3CB5FE2E8E6DFCB98F67D04419B7B264474CB775DD02900B",
+    "nativeSha256": "b351e39c02ff370a1dd5af326e846fb0499281db5e93efdf59dace5aba2362aa"
+  },
+  {
+    "buildId": "v123-qa-hero-unlock-reproduction",
+    "package": "com.habby.kinjarun.offline.qa.heroes",
+    "apkSha256": "8C9D78386C7B9ED7A06758AAA08586799ACCF1247E7636C0B1BA9D59B0218FFB",
+    "nativeSha256": "aef58d844bfab23a8a7916e6d1724a52dd6b1bbd1c359a1fc7669e4cbabb9870"
+  },
+  {
+    "buildId": "v122-qa-hero-minimum-star",
+    "package": "com.habby.kinjarun.offline.qa.heroes",
+    "apkSha256": "9E80972B15A929F440AA36E44C807BF209CB8011DC71095BD8F9F55476305521",
+    "nativeSha256": "171b621fc467836532abd855e97954961d97bbb217b4c810b5fac9b065bba64d"
+  },
+  {
+    "buildId": "v125-qa-hero-final",
+    "package": "com.habby.kinjarun.offline.qa.heroes",
+    "apkSha256": "8BFAD2BE09EC1527AFCA2FC663390E39071219E1DC7F7BF3FC6112C0E21D95EA",
+    "nativeSha256": "b351e39c02ff370a1dd5af326e846fb0499281db5e93efdf59dace5aba2362aa"
+  },
+  {
+    "buildId": "v124-qa-hero-actions",
+    "package": "com.habby.kinjarun.offline.qa.heroes",
+    "apkSha256": "2D211DEB01C262DF2801974B3C9EB1A12D0E4545315E9C5E6455F84512DF105C",
+    "nativeSha256": "1df277caac802339212757cf8cbd4d079334a0c605a78c098933c8f9a550b7ce"
   }
 ]

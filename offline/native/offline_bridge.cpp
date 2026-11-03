@@ -4017,6 +4017,8 @@ bool log_offline_perk_statuses(Obj player_manager, Roots& roots) {
 // navigation locks even though local chapter and level saves satisfy the
 // shipped FunctionCfg requirements. Rebuild only the progression-based,
 // offline-capable portion of that response from the local save.
+#include "hero_offline.h"
+
 bool read_local_menu_progress(std::string& regions, bool& chapter1_passed, bool& chapter2_passed) {
     chapter1_passed = chapter2_passed = false;
     int64_t max_region = 0;
@@ -4049,6 +4051,9 @@ bool set_local_opening_functions(Method json_method, Roots& roots) {
     if (chapter1_passed) opened.push_back(101); // Talent: challenge chapter 1.
     if (level >= 2) { opened.push_back(102); opened.push_back(103); } // Equipment and shop.
     if (chapter2_passed) opened.push_back(116); // Hang-up rewards: pass chapter 2.
+    bool hero_open = false;
+    if (!local_hero_function_open(hero_open,roots)) return false;
+    if (hero_open) opened.push_back(107);
     // Server-only and purchase-driven entries (guild, first charge, cards,
     // funds, chapter gifts and hero offers) stay out of the offline menu list.
 
@@ -4163,6 +4168,7 @@ bool initialize_original_player(Obj pdm) {
     // Normalize existing earned EXP before creating the original player model.
     // Idempotent: retain only the unspent balance and never demote legacy levels.
     if (!repair_saved_account_progress(roots)) return false;
+    if (!recover_hero_transaction() || !repair_legacy_hero_stars(roots)) return false;
     if (!enable_offline_perks()) return false;
 #ifdef KINJA_OFFLINE_QA_MAX_PROFILE
     if (!apply_qa_max_profile()) return fail("Could not prepare the authorized QA resource profile");
@@ -5174,6 +5180,17 @@ bool install_hook(void* library) {
                          reinterpret_cast<uintptr_t>(&local_talent_upgrade_hook)))
             LOGE("Could not replace online talent upgrade: %s", last_error.c_str());
     } else LOGE("Could not configure local talent upgrade task: %s", last_error.c_str());
+    Klass hero_helper=find_class("ET","HeroHelper");
+    const char* hero_names[]={"EquipHero","ExchangeHero","HeroLevelUp","HeroStarUp"};
+    const uintptr_t hero_rvas[]={0x296b5b8,0x296b6ac,0x296b7a0,0x296b894};
+    const uintptr_t hero_hooks[]={reinterpret_cast<uintptr_t>(&hero_equip_hook),reinterpret_cast<uintptr_t>(&hero_acquire_hook),
+        reinterpret_cast<uintptr_t>(&hero_level_hook),reinterpret_cast<uintptr_t>(&hero_star_hook)};
+    const std::array<uint8_t,16> hero_entry={0xff,0x43,0x01,0xd1,0xf4,0x4f,0x03,0xa9,0xfd,0x7b,0x04,0xa9,0xfd,0x03,0x01,0x91};
+    for (int i=0;i<4;++i) {
+        if (!hero_helper || !configure_task(hero_tasks[i],hero_helper,hero_names[i],{"System.Int32"},nullptr) ||
+            !patch_entry(base,hero_rvas[i],hero_entry,hero_names[i],hero_hooks[i]))
+            LOGE("Cannot configure local hero action %s: %s",hero_names[i],last_error.c_str());
+    }
     Klass equip_helper = find_class("ET", "EquipHelper");
     if (equip_helper && configure_task(local_wear_equip_task, equip_helper, "WearEquip",
                                        {"EquipPart", "System.Int32"}, nullptr)) {
