@@ -1200,7 +1200,10 @@ bool grant_local_currency_reward(int gold, int exp, Roots& roots, int diamonds =
         if (!invoke(get_level, player, nullptr, "PlayerDataManager.get_PlayerLevel local progression", &obscured) || !obscured)
             return false;
         roots.retain(obscured);
-        if (!invoke(decrypt, obscured, nullptr, "ObscuredInt.GetDecrypted account level", &boxed) || !boxed)
+        // runtime_invoke expects an unboxed receiver for a value-type instance
+        // method; passing the boxed object interprets its header as cipher data.
+        void* level_value = api.object_unbox(obscured);
+        if (!level_value || !invoke(decrypt, level_value, nullptr, "ObscuredInt.GetDecrypted account level", &boxed) || !boxed)
             return false;
         roots.retain(boxed);
         void* value = api.object_unbox(boxed);

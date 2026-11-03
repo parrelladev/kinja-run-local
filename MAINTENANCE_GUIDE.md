@@ -1,5 +1,9 @@
 # Guia de manutenção do Kinja Run offline
 
+## Nível da conta — teste QA positivo e build normal v116
+
+[Evidências completas](docs/testing/ACCOUNT_LEVEL_QA_V116.md). Usuário autorizou saves artificiais em packages separados. Migração 2/5838 → 4/838 confirmada em runtime e restart; coleta HangUp em outro QA passou 2/1990 +151 EXP → 3/141, ouro1500→1651, home/readback/restart concordantes. Teste revelou receiver boxed incorreto em `GetDecrypted` na v112: corrigido com `object_unbox` na v116 normal. V115 QA e v116 normal usam a mesma biblioteca, sem novas regras de EXP de combate. Audit1 preservado por update, sem importar save do celular. Fixtures em `build.ps1` são opt-in e restritos a packages QA exatos, sem reposição de recursos. Outros bugs aguardam avaliação do usuário.
+
 ## Nível da conta — correção v112 em avaliação
 
 [Relatório e limites](docs/testing/ACCOUNT_LEVEL_V112.md). Imagem do usuário mostra nível 2 com 5838/2000 EXP. O crédito local salvava EXP sem avançar nível. V112 usa `AccountLevelCfg` original para consumir os custos, preservar excedente e atualizar Level/Exp juntos; também normaliza excesso de EXP no login, sem conceder recursos. Caso isolado 2/5838 → 4/838, idempotência e todos os limites passaram. ARM64 compilado; audit1 do BlueStacks atualizado e home preservada, sem mudança no celular/acervo. Passagem de nível em gameplay e migração do save avançado ainda não observadas. EXP de combate permanece sem fórmula implementada. Outros bugs aguardam aprovação do usuário após este item.

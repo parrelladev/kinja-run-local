@@ -1,5 +1,9 @@
 # Auditoria funcional — build offline v31
 
+## Nível da conta — validação com saves sintéticos v113–v117
+
+[Relatório QA](docs/testing/ACCOUNT_LEVEL_QA_V116.md). Autorização explícita para save editado, somente em dois packages separados no BlueStacks. Migração 2/5838 → 4/838 e idempotência no restart confirmadas. Nova coleta de151 EXP elevou2/1990 →3/141, com ouro1651/gemas0, home/readback e restart preservados. Defeito de leitura de nível descoberto na v112 corrigido por receiver unboxed na v116 normal, atualizada no audit1. Telefone/acervo não alterados. Isso valida a passagem com EXP acumulada/HangUp em QA, sem validar fórmula de EXP por combate ou save real do celular. Histórico v112 abaixo foi supersedido por esses resultados.
+
 ## Nível da conta — v112, 03/11/2026
 
 Imagem da v111 no celular: nível 2, 5838/2000 EXP e Capítulo 6. Confirmado no bridge: crédito de EXP não alterava nível. [Correção, hashes, testes e limitações](docs/testing/ACCOUNT_LEVEL_V112.md). Planejador com tabela original passou caso 2/5838 → 4/838 e os 199 limites. V112 instalada somente no audit1 do BlueStacks com `install -r`, mesmo certificado e firstInstallTime; curva original lida com sucesso, initialized/home preservados em 1500/0/0, nível 1. Não houve save avançado disponível como arquivo, concessão artificial ou teste consumidor. Subida visual e persistência de nível elevado permanecem pendentes; não equivale a validação completa de gameplay. Sem correção dos outros bugs nesta rodada.

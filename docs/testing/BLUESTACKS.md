@@ -1,5 +1,7 @@
 # Testes no BlueStacks
 
+**Teste posterior de nível:** saves artificiais autorizados em dois packages QA separados confirmaram migração de EXP excedente e subida por coleta HangUp, com home/readback/restart. Build normal v116 corrige a leitura ObscuredInt da v112. Detalhes e limites em [ACCOUNT_LEVEL_QA_V116.md](ACCOUNT_LEVEL_QA_V116.md); não confundir esses estados artificiais com progressão natural do audit1.
+
 BlueStacks é o ambiente pretendido pelo usuário para evitar conectar o celular. **Atualização por relato do usuário em 03/11/2026:** APK v111 executou normalmente no BlueStacks. Não houve observação instrumental por este agente; versão/instância, Android/API, ABI, endpoint ADB, modo offline, persistência e fluxos específicos de gameplay continuam sem registro de teste. A migração não iniciou nem configurou o emulador.
 
 ## Antes de instalar

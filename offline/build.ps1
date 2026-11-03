@@ -2,11 +2,20 @@ param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')][string]$BuildId = 'v3',
     [ValidatePattern('^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$')][string]$PackageName = 'com.habby.kinjarun.offline.lab',
     [string]$NativeLibrary,
+    [ValidateSet('None','Migration','RewardBoundary')][string]$AccountProgressionFixture = 'None',
     [switch]$PackageApk
 )
 
 $ErrorActionPreference = 'Stop'
 $kinjaProject = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+if ($AccountProgressionFixture -ne 'None') {
+    $kinjaFixturePackage = if ($AccountProgressionFixture -eq 'Migration') {
+        'com.habby.kinjarun.offline.qa.expmigration'
+    } else { 'com.habby.kinjarun.offline.qa.expreward' }
+    if ($PackageName -ne $kinjaFixturePackage) {
+        throw "Account EXP fixture requires isolated package $kinjaFixturePackage; existing player profiles are forbidden"
+    }
+}
 $kinjaBuildRoot = Join-Path $kinjaProject 'build'
 . (Join-Path $kinjaProject 'tools/workspace/paths.ps1')
 $kinjaLocalPaths = Get-KinjaWorkspacePaths -ProjectRoot $kinjaProject
@@ -38,6 +47,31 @@ $kinjaAllSeeds = @(Get-ChildItem -LiteralPath $kinjaSeeds -Filter 'seed_*.json' 
 foreach ($kinjaSeed in $kinjaAllSeeds) { Get-Content -LiteralPath (Join-Path $kinjaSeeds $kinjaSeed) -Raw | ConvertFrom-Json | Out-Null }
 if (-not $NativeLibrary -and -not (Test-Path -LiteralPath $kinjaNativeSource)) { throw 'Native bridge source has not landed' }
 [IO.Directory]::CreateDirectory($kinjaWork) | Out-Null
+$kinjaLabel = 'Kinja Run Offline Lab'
+if ($AccountProgressionFixture -ne 'None') {
+    # Authorized synthetic seeds, only in the new build directory and package.
+    # No runtime seeding/replenishment and no modification of normal assets.
+    $kinjaFixtureSeeds = Join-Path $kinjaWork 'qa-seeds'
+    New-Item -ItemType Directory -Path $kinjaFixtureSeeds | Out-Null
+    foreach ($kinjaSeed in $kinjaAllSeeds) { Copy-Item -LiteralPath (Join-Path $kinjaSeeds $kinjaSeed) -Destination $kinjaFixtureSeeds }
+    $kinjaSeeds = $kinjaFixtureSeeds
+    $kinjaFixturePlayer = Get-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_player.json') -Raw | ConvertFrom-Json
+    $kinjaFixturePlayer.Level = 2
+    $kinjaFixturePlayer.Exp = if ($AccountProgressionFixture -eq 'Migration') { 5838 } else { 1990 }
+    $kinjaFixturePlayer.PlayerName = 'QA EXP ' + $AccountProgressionFixture
+    $kinjaFixturePlayer | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_player.json') -Encoding utf8NoBOM
+    if ($AccountProgressionFixture -eq 'RewardBoundary') {
+        # Chapter 2 completion exposes HangUp for one ordinary claim via its UI.
+        $kinjaFixtureRegions = Get-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_regions.json') -Raw | ConvertFrom-Json
+        $kinjaFixtureRegions.SelectRegion = 3
+        $kinjaFixtureRegions.MaxRegion = 3
+        $kinjaFixtureRegions.MaxRegionProgress = 100
+        $kinjaFixtureRegions.RegionsInfo[1].IsPass = $true
+        $kinjaFixtureRegions.RegionsInfo += [pscustomobject]@{RegionId=3;IsPass=$true;MaxScore=0;ConsecutiveLostCount=0;DifficultPass=@($false,$false)}
+        $kinjaFixtureRegions | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_regions.json') -Encoding utf8NoBOM
+    }
+    $kinjaLabel = 'Kinja QA EXP ' + $AccountProgressionFixture
+}
 $kinjaNativeOut = Join-Path $kinjaWork 'libkinjaoffline.so'
 if ($NativeLibrary) {
     Copy-Item -LiteralPath (Resolve-Path -LiteralPath $NativeLibrary).Path -Destination $kinjaNativeOut
@@ -58,7 +92,7 @@ if (Select-String -LiteralPath (Join-Path $kinjaWork 'native-layout.txt') -Patte
 & (Join-Path $PSScriptRoot 'prepare_wrapper.ps1') -OutputDirectory (Join-Path $kinjaWork 'wrapper')
 if ($LASTEXITCODE -ne 0) { throw 'Wrapper preparation failed' }
 $kinjaPatch = Join-Path $kinjaWork 'patch'
-& python (Join-Path $kinjaTools 'prepare_offline_lab.py') --input $kinjaOriginal --output-dir $kinjaPatch --launcher-activity local.kinja.OfflineActivity --package $PackageName
+& python (Join-Path $kinjaTools 'prepare_offline_lab.py') --input $kinjaOriginal --output-dir $kinjaPatch --launcher-activity local.kinja.OfflineActivity --package $PackageName --label $kinjaLabel
 if ($LASTEXITCODE -ne 0) { throw 'Wrapper manifest preparation failed' }
 & python (Join-Path $kinjaTools 'patch_resource_package.py') --input $kinjaOriginal --output (Join-Path $kinjaPatch 'resources.arsc') --new-package $PackageName
 if ($LASTEXITCODE -ne 0) { throw 'Resource namespace preparation failed' }
@@ -75,7 +109,7 @@ $kinjaPlan = [ordered]@{originalApk=$kinjaOriginal;originalSha256='7953eb369ba9b
     launcher='local.kinja.OfflineActivity';package=$PackageName;dexMember='classes6.dex';
     nativeMember='lib/arm64-v8a/libkinjaoffline.so';nativeSha256=(Get-FileHash -LiteralPath $kinjaNativeOut -Algorithm SHA256).Hash.ToLowerInvariant();
     wrapperDexSha256=(Get-FileHash -LiteralPath (Join-Path $kinjaWork 'wrapper\dex\classes.dex') -Algorithm SHA256).Hash.ToLowerInvariant();
-    seedAssets=$kinjaAllSeeds;unsignedApk=$kinjaUnsigned;signedApk=$kinjaSigned;packageRequested=[bool]$PackageApk}
+    seedAssets=$kinjaAllSeeds;accountProgressionFixture=$AccountProgressionFixture;unsignedApk=$kinjaUnsigned;signedApk=$kinjaSigned;packageRequested=[bool]$PackageApk}
 $kinjaPlan | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $kinjaWork 'build-plan.json') -Encoding utf8
 if (-not $PackageApk) {
     Write-Output ('Build setup prepared. No APK was written. Plan: ' + (Join-Path $kinjaWork 'build-plan.json'))

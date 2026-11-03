@@ -1,5 +1,7 @@
 # Nível da conta — v112, 03/11/2026
 
+**Atualização posterior:** os testes com saves artificiais autorizados validaram migração, crédito com passagem de nível e reinício, mas encontraram uma leitura incorreta de ObscuredInt na v112. Corrigida na **v116 normal**, que substitui a v112. [Resultados e artefatos QA](ACCOUNT_LEVEL_QA_V116.md). As pendências abaixo descrevem o estado anterior a esses testes.
+
 ## Evidência e causa
 
 Imagem fornecida pelo usuário da v111 no celular: Capítulo 6, nível 2 e barra **5838/2000 EXP**. O anexo é uma captura, não um arquivo de save acessível ao agente. Nenhum dado privado do celular foi lido, copiado ou modificado.
