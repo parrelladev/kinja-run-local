@@ -1,0 +1,56 @@
+[
+  {
+    "buildId": "v114-qa-exp-reward-boundary",
+    "package": "com.habby.kinjarun.offline.qa.expreward",
+    "apkSha256": "051C980EF4C4F503F681A484A8AF65F1BE48181F969A60C62D4E61B6CADC507D",
+    "nativeSha256": "a1f278823cadd42dd86c84d10fac9a471a05ea7341181ddaf8acc8e0b422754d"
+  },
+  {
+    "buildId": "v113-qa-exp-migration",
+    "package": "com.habby.kinjarun.offline.qa.expmigration",
+    "apkSha256": "CEA28002A999DC3F7BD0C5EFFA6B5FFC793F34F995A2A4F773B385A21AB5F7DB",
+    "nativeSha256": "a1f278823cadd42dd86c84d10fac9a471a05ea7341181ddaf8acc8e0b422754d"
+  },
+  {
+    "buildId": "v112-account-exp-level-progression",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "A2978E847596B31A7691D5E954D49D328A3A7B81383F814FAF051FB6752AC2B1",
+    "nativeSha256": "a1f278823cadd42dd86c84d10fac9a471a05ea7341181ddaf8acc8e0b422754d"
+  },
+  {
+    "buildId": "v116-account-exp-unboxed-level",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "3F51518B756096B19B32E25C7FA5B1EAC10AE31316A4E11AF6761E5445500BC6",
+    "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
+  },
+  {
+    "buildId": "v120-local-equipment-recycle",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "568E74C12A54597D86C79DB94368B2A335F386D816A32C0D0E953F546646C60D",
+    "nativeSha256": "86644fb763bacb75145c402f8f94c91562e835c4cb319f75c70ab7e71fda41dc"
+  },
+  {
+    "buildId": "v118-qa-recycle-reproduction",
+    "package": "com.habby.kinjarun.offline.qa.equipbreak",
+    "apkSha256": "ED28C31E4E285C412F4A259916B82859F60CDA70B09237C9E838A929D69F073A",
+    "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
+  },
+  {
+    "buildId": "v117-qa-exp-migration-unboxed",
+    "package": "com.habby.kinjarun.offline.qa.expmigration",
+    "apkSha256": "28ABECD2DDEC56B6A9CCC76B1237D8A35304D6913668A47FC9640D68EB687099",
+    "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
+  },
+  {
+    "buildId": "v119-local-equipment-recycle-qa",
+    "package": "com.habby.kinjarun.offline.qa.equipbreak",
+    "apkSha256": "AE23E343A6D36012ADA89E9E94B00E382E5089C7651B1AE88C71759130DB727B",
+    "nativeSha256": "86644fb763bacb75145c402f8f94c91562e835c4cb319f75c70ab7e71fda41dc"
+  },
+  {
+    "buildId": "v115-qa-exp-reward-unboxed",
+    "package": "com.habby.kinjarun.offline.qa.expreward",
+    "apkSha256": "0BBE051700FCFF6E5864E26E457009099F364CA195F1A465A7CFEA728C2C3B0F",
+    "nativeSha256": "370f21519aa454816d373f0be1bfc24388dd3ad2ced48a0c9125ba3ff93e7dcf"
+  }
+]

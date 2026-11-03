@@ -1,5 +1,13 @@
 # Guia de manutenção do Kinja Run offline
 
+## Retenção de builds — somente a versão normal atual
+
+Em 03/11/2026, o usuário autorizou apagar builds anteriores/intermediários e manter somente a build atual. `tools/workspace/clean-builds.ps1 -KeepBuildId v120-local-equipment-recycle` reduziu `build` de6835539684 para375954075 bytes (6459585609 liberados). Restaram o APK assinado v120 e o relatório de assinatura; SHA256 `568E74C12A54597D86C79DB94368B2A335F386D816A32C0D0E953F546646C60D` reconferido. O acervo externo, dependências, chave/senha e saves Android não foram alterados.
+
+Histórico pequeno de IDs/packages/hashes em `docs/development/build-history.json`; o build recusa IDs já registrados mesmo após remover seus arquivos. Após concluir testes e documentar cada nova build normal, executar a limpeza mantendo esse BuildId. `-WhatIf` mostra a ação sem escrever/apagar. O script verifica limites absolutos da pasta, recusa links, inputs configurados e arquivos desconhecidos; registra o histórico antes de remover saídas geradas. Não aponta para o acervo externo. Durante testes, preservar temporariamente os artefatos ainda necessários.
+
+As referências a APKs/logs/capturas anteriores em `build/` nos relatórios são **históricas**: os arquivos brutos locais foram removidos nesta limpeza autorizada, inclusive `build/tests/`. Sínteses versionadas e seus níveis de evidência permanecem; não afirmar que os arquivos brutos ainda estão disponíveis. Evidências históricas do acervo externo continuam onde estavam. Esta limpeza não altera a validação ou lógica da v120.
+
 ## Reciclagem individual — v120 em avaliação
 
 [Reprodução, contrato e testes](docs/testing/EQUIPMENT_RECYCLE_V120.md). Usuário aprovou nível como resolvido e confirmou falha no detalhe de uma peça. NRE online reproduzida em BreakEquip na v118 QA. V119 QA/v120 normal interceptam helper0x2C2D118 com prólogo conferido, usam GetBreakEquipReturn original, devolvem ouro/livros e retornam peça ao nível1 mantendo UID/qualidade/parte/wear. Modelos preparados, guard/journal/fsync, readback e rollback de saves/managers. Duas peças artificiais q2 foram validadas:5→1 não equipada (+400ouro/4livros) e3→1 equipada (+200/2); restart manteve2100ouro/6livros e as3peças. UI esconde reciclagem em nível1. V120 normal instalada somente no audit1 do BlueStacks, sem seeds QA; package já ausente antes de instalar, portanto instalação nova, não migração do perfil anterior. Nenhuma desinstalação/limpeza executada pelo agente. Lote/fault injection/outras faixas não validados; aguardar avaliação antes de heróis.

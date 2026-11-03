@@ -25,6 +25,12 @@ $kinjaBuildRoot = Join-Path $kinjaProject 'build'
 . (Join-Path $kinjaProject 'tools/workspace/paths.ps1')
 $kinjaLocalPaths = Get-KinjaWorkspacePaths -ProjectRoot $kinjaProject
 $kinjaWork = Join-Path $kinjaBuildRoot ('offline-bridge-' + $BuildId)
+$kinjaHistory = Join-Path $kinjaProject 'docs/development/build-history.json'
+if (Test-Path -LiteralPath $kinjaHistory) {
+    if (@(Get-Content -LiteralPath $kinjaHistory -Raw | ConvertFrom-Json | Where-Object { $_.buildId -eq $BuildId }).Count) {
+        throw 'BuildId already recorded in history; choose a new BuildId'
+    }
+}
 # BuildIds remain unique across the configured historical archive and this checkout.
 if ($kinjaLocalPaths.archiveRoot) {
     $kinjaArchiveBuild = Join-Path $kinjaLocalPaths.archiveRoot 'build'

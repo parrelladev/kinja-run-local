@@ -5,6 +5,7 @@ Antes de investigar ou alterar este repositório, leia [`MAINTENANCE_GUIDE.md`](
 Regras de trabalho:
 
 - Faça um commit local após cada mudança concluída, com mensagem que descreva a alteração e validação pertinente. Não deixe alterações próprias pendentes ao encerrar a tarefa. O usuário fará o push; não execute push automaticamente.
+- Após concluir os testes e documentar uma nova build normal, limpe `build` com `tools/workspace/clean-builds.ps1 -KeepBuildId <build-normal-atual>`, mantendo somente o APK assinado atual e seu relatório de assinatura. O usuário autorizou excluir builds antigas, intermediários e evidências brutas locais; preserve as sínteses versionadas e o histórico pequeno de IDs/hashes. Não limpe o acervo externo, dependências, chave/senha ou saves do Android. Durante uma investigação, mantenha temporariamente apenas os artefatos necessários aos testes em curso.
 - Trate `kinja-run-1-9-1.apk` como artefato-alvo da versão 1.9.1; não presuma que nomes de métodos ou endereços servem para outra versão.
 - Reproduza e rastreie o fluxo relatado antes de alterar lógica. Separe evidência observada de hipótese e evite mudanças amplas para sintomas ainda não explicados.
 - Preserve as verificações de hash/prologue e as chamadas às APIs IL2CPP originais. Não escreva offsets de objetos gerenciados diretamente.
