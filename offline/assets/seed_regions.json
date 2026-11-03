@@ -1,0 +1,10 @@
+{
+  "SelectRegion": 2,
+  "MaxRegion": 2,
+  "MaxRegionProgress": 0,
+  "RegionsInfo": [
+    {"RegionId": 1, "IsPass": false, "MaxScore": 0, "ConsecutiveLostCount": 0, "DifficultPass": [false, false]},
+    {"RegionId": 2, "IsPass": false, "MaxScore": 0, "ConsecutiveLostCount": 0, "DifficultPass": [false, false]}
+  ],
+  "SupportGifts": []
+}

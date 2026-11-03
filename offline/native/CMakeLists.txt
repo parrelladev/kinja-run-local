@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.18)
+project(kinjaoffline LANGUAGES CXX)
+add_library(kinjaoffline SHARED offline_bridge.cpp)
+target_compile_features(kinjaoffline PRIVATE cxx_std_17)
+target_compile_options(kinjaoffline PRIVATE -Wall -Wextra)
+target_link_options(kinjaoffline PRIVATE -Wl,-z,max-page-size=16384)
+target_link_libraries(kinjaoffline PRIVATE log android dl)

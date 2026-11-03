@@ -1,0 +1,8 @@
+{
+  "LastRefreshTime": 0,
+  "List": [
+    {"ChestId": 101, "DayRemainNum": 0, "NextTime": 0, "TotalOpenTimes": 0, "GroupIds": [], "GroupNums": []},
+    {"ChestId": 115, "DayRemainNum": 0, "NextTime": 0, "TotalOpenTimes": 0, "GroupIds": [], "GroupNums": []},
+    {"ChestId": 108, "DayRemainNum": 0, "NextTime": 0, "TotalOpenTimes": 0, "GroupIds": [], "GroupNums": []}
+  ]
+}

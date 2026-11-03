@@ -1,0 +1,8 @@
+{
+  "RpcId": 0, "Error": 0, "Message": "offline",
+  "RegionId": 1,
+  "IsNewStage": false, "IsNewScore": false, "IsNewChapter": false,
+  "IsPass": false, "IsReplay": false, "LostCount": 0,
+  "Gold": 0, "Diamond": 0, "Exp": 0,
+  "Items": [], "EquipsUid": [], "PiggyDiamond": 0, "BpExp": 0
+}

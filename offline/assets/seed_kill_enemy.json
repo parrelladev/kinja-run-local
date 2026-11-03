@@ -1,0 +1,8 @@
+{
+  "RpcId": 0, "Error": 0, "Message": "offline",
+  "Gold": 0, "Diamond": 0, "Exp": 0,
+  "Items": [], "EquipsUid": [],
+  "CalcBaseAtkWithoutBuff": 0,
+  "CalcEquipAtkWithoutBuff": 0,
+  "CalcEquipBaseAtkWithoutBuff": 0
+}

@@ -1,0 +1,20 @@
+{
+  "PlayerName": "Offline",
+  "RegTime": 1,
+  "LastTime": 1,
+  "Lang": "en",
+  "Level": 1,
+  "Coin": 1500,
+  "Diamond": 0,
+  "Power": 30,
+  "Exp": 0,
+  "IsNewDay": false,
+  "CumulativeLoginDays": 1,
+  "PlayerStatus": ["8", "9", "10"],
+  "PlayerStatusTime": [4102444800, 4102444800, 4102444800],
+  "RenameCount": 0,
+  "Icon": 0,
+  "IconFrame": 0,
+  "Union": 0,
+  "UnionHelpLastTime": 0
+}

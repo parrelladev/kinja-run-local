@@ -1,0 +1,509 @@
+{
+  "source": "acervo original local",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sourceSha256": "0868f6a7b9e0ea293b2953645a83204e6ceb3b76c4ac597d8d25d7782bba19ae",
+      "sourceBytes": 1608,
+      "workingSha256": "0868f6a7b9e0ea293b2953645a83204e6ceb3b76c4ac597d8d25d7782bba19ae",
+      "adjusted": false
+    },
+    {
+      "path": "FUNCTIONAL_AUDIT.md",
+      "sourceSha256": "f0c35d14389c553adc4d7e1b1981364a17f4728d53ec70f2be5a99a80aa0c592",
+      "sourceBytes": 160560,
+      "workingSha256": "f0c35d14389c553adc4d7e1b1981364a17f4728d53ec70f2be5a99a80aa0c592",
+      "adjusted": false
+    },
+    {
+      "path": "MAINTENANCE_GUIDE.md",
+      "sourceSha256": "2c6078a6ca33e8a1aed26e8b236b18c6cfbb80c71ff5ad4c9900bda5b7a6cfe2",
+      "sourceBytes": 77067,
+      "workingSha256": "33baaceb91dcdbc4947dba6e209546548c12b7b1d8d2a652e874318043a83071",
+      "adjusted": true
+    },
+    {
+      "path": "package-lock.json",
+      "sourceSha256": "b6897a768ed74bd6a120e512456cab50dfb4f04e551f32dbb3c2acb0029ecfc3",
+      "sourceBytes": 68292,
+      "workingSha256": "b6897a768ed74bd6a120e512456cab50dfb4f04e551f32dbb3c2acb0029ecfc3",
+      "adjusted": false
+    },
+    {
+      "path": "package.json",
+      "sourceSha256": "07dd7fbf1dadf49013bf27dad92cb5265361e25ae5f6bc0bc8d7dadc68625a5b",
+      "sourceBytes": 58,
+      "workingSha256": "07dd7fbf1dadf49013bf27dad92cb5265361e25ae5f6bc0bc8d7dadc68625a5b",
+      "adjusted": false
+    },
+    {
+      "path": "REVERSE_ENGINEERING.md",
+      "sourceSha256": "27901b29b93fde0c79420c49a63201c32198f49ba8dc56cec53dc97c2905846e",
+      "sourceBytes": 5183,
+      "workingSha256": "27901b29b93fde0c79420c49a63201c32198f49ba8dc56cec53dc97c2905846e",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/android/ANDROID_FINDINGS.md",
+      "sourceSha256": "4d60238969745444d5f4e3c89157d0d8e0db045849a9bf0543c38b2dd53102f1",
+      "sourceBytes": 7997,
+      "workingSha256": "4d60238969745444d5f4e3c89157d0d8e0db045849a9bf0543c38b2dd53102f1",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/android/OFFLINE_LAB_BUILDS.md",
+      "sourceSha256": "a1716134ae0e2fc8d9225c88c498cb80b1e63b217f97c01be9b5d2a4391e4c99",
+      "sourceBytes": 4981,
+      "workingSha256": "a1716134ae0e2fc8d9225c88c498cb80b1e63b217f97c01be9b5d2a4391e4c99",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/bundles/FINDINGS.md",
+      "sourceSha256": "d07747151f32623b7943abbf59255db5edb232c5cefce7a6c935267ef9f724d6",
+      "sourceBytes": 7932,
+      "workingSha256": "d07747151f32623b7943abbf59255db5edb232c5cefce7a6c935267ef9f724d6",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/bundles/offline-bootstrap.md",
+      "sourceSha256": "8469a9ff369fb2ebf423fd83546b29f4675cf5123404c5be5fae91a46cf8ca20",
+      "sourceBytes": 12120,
+      "workingSha256": "8469a9ff369fb2ebf423fd83546b29f4675cf5123404c5be5fae91a46cf8ca20",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/metadata/OFFLINE_FIGHT_GATES.md",
+      "sourceSha256": "293b1506e19155714efceba4642497fe7cd136c9e7f9b0c0c17b6998817c4539",
+      "sourceBytes": 19271,
+      "workingSha256": "293b1506e19155714efceba4642497fe7cd136c9e7f9b0c0c17b6998817c4539",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/metadata/OFFLINE_PLAYER_BOOTSTRAP.md",
+      "sourceSha256": "fd7a7ca39d2248171116f51c383be06517b1bce09eeeb57104d32cdc5bca2b98",
+      "sourceBytes": 13001,
+      "workingSha256": "fd7a7ca39d2248171116f51c383be06517b1bce09eeeb57104d32cdc5bca2b98",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/metadata/RECOVERY.md",
+      "sourceSha256": "0220d29534c466e76b236a87f9d930affa8f2c3f7c8c152b2065a42f0282a349",
+      "sourceBytes": 6693,
+      "workingSha256": "0220d29534c466e76b236a87f9d930affa8f2c3f7c8c152b2065a42f0282a349",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/metadata/startup-types.md",
+      "sourceSha256": "05d99babadc98b66a1c835ff03f9ec6200289467a1a7923d7ddbdfdaf1495a0c",
+      "sourceBytes": 284475,
+      "workingSha256": "05d99babadc98b66a1c835ff03f9ec6200289467a1a7923d7ddbdfdaf1495a0c",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/native/FUSION_1_9_1_V102.md",
+      "sourceSha256": "1e8bb84910389d4e32422ebac37e872df40e3565256ce13a5a354c60a7313569",
+      "sourceBytes": 15862,
+      "workingSha256": "1e8bb84910389d4e32422ebac37e872df40e3565256ce13a5a354c60a7313569",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/native/OFFLINE_READINESS_AUDIT.md",
+      "sourceSha256": "7672ae1a61d50330df2ba8fef29e72139fc1e5c2947ca7041708bd6823cec34b",
+      "sourceBytes": 6480,
+      "workingSha256": "7672ae1a61d50330df2ba8fef29e72139fc1e5c2947ca7041708bd6823cec34b",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/native/ONEKEY_1_9_1_INVESTIGATION.md",
+      "sourceSha256": "5f771b7d40a64c11ba406618127d146ba3a8e0169ccc5155df6dc7f7f4f17802",
+      "sourceBytes": 6849,
+      "workingSha256": "5f771b7d40a64c11ba406618127d146ba3a8e0169ccc5155df6dc7f7f4f17802",
+      "adjusted": false
+    },
+    {
+      "path": "analysis/native/ONEKEY_OFFLINE_V107.md",
+      "sourceSha256": "89ee9df195ef2183c74f0ad56fba0e8fb67853a296b3bfc0b8f030a7eaf8e011",
+      "sourceBytes": 11273,
+      "workingSha256": "89ee9df195ef2183c74f0ad56fba0e8fb67853a296b3bfc0b8f030a7eaf8e011",
+      "adjusted": false
+    },
+    {
+      "path": "offline/build.ps1",
+      "sourceSha256": "f4ab2ea4379f11705320083aac6fd4b877f31af1a98fd40a3bc95b2e60179bfc",
+      "sourceBytes": 6794,
+      "workingSha256": "9a01def3bc7bd893d270c59c8fa8c228483ac7855cb31083fdcf172fcb2b10dc",
+      "adjusted": true
+    },
+    {
+      "path": "offline/BUILDING.md",
+      "sourceSha256": "b3c607e0add8e1e19445714c79f35c0996522e129dc037e9d7e6e54948980f52",
+      "sourceBytes": 4931,
+      "workingSha256": "b3c607e0add8e1e19445714c79f35c0996522e129dc037e9d7e6e54948980f52",
+      "adjusted": false
+    },
+    {
+      "path": "offline/prepare_wrapper.ps1",
+      "sourceSha256": "83a327cb3e497ef1eed79400f7241eb4b96d5a2641cb68af4036255c3723b9a5",
+      "sourceBytes": 2745,
+      "workingSha256": "0ad5e4010a35b830c8fa02af3231d28a33f761e1a5e16e3c899506ecfd24dea7",
+      "adjusted": true
+    },
+    {
+      "path": "offline/validate_wrapper.py",
+      "sourceSha256": "a4589c02fa50f161db87a391e6706221b9830ec87f6c5b737fc0ea5eae71dd2c",
+      "sourceBytes": 3109,
+      "workingSha256": "a4589c02fa50f161db87a391e6706221b9830ec87f6c5b737fc0ea5eae71dd2c",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_end_game.json",
+      "sourceSha256": "efe99b161977d187d7f123d83462217ca66d43546688da0e7b726d4f418641bd",
+      "sourceBytes": 289,
+      "workingSha256": "efe99b161977d187d7f123d83462217ca66d43546688da0e7b726d4f418641bd",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_equipment.json",
+      "sourceSha256": "11ce53e3612f2d84e2ec1b15f1b7cf33b111dfb6bf9e22ba0154d9e2a709bfe4",
+      "sourceBytes": 19,
+      "workingSha256": "11ce53e3612f2d84e2ec1b15f1b7cf33b111dfb6bf9e22ba0154d9e2a709bfe4",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_guide.json",
+      "sourceSha256": "efc2d3b582591540b8ee41f1d3c87069f71b1b236372787038971a94eaee4658",
+      "sourceBytes": 17,
+      "workingSha256": "efc2d3b582591540b8ee41f1d3c87069f71b1b236372787038971a94eaee4658",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_hangup.json",
+      "sourceSha256": "c4c0e580b210220aaf7f2bcdd7e1d0d62415b6d809aace9e346c850a386d09db",
+      "sourceBytes": 175,
+      "workingSha256": "c4c0e580b210220aaf7f2bcdd7e1d0d62415b6d809aace9e346c850a386d09db",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_hangup_reward.json",
+      "sourceSha256": "13bb159607c9e88479f8f1ba7a7086ff33de984e928643775f0329f2a633d44c",
+      "sourceBytes": 242,
+      "workingSha256": "13bb159607c9e88479f8f1ba7a7086ff33de984e928643775f0329f2a633d44c",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_heroes.json",
+      "sourceSha256": "fc8019b54c6348a3378b00b2020b0704bbfa7c1a337630d4b6b840082478afaf",
+      "sourceBytes": 102,
+      "workingSha256": "fc8019b54c6348a3378b00b2020b0704bbfa7c1a337630d4b6b840082478afaf",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_items.json",
+      "sourceSha256": "78e893f213e191ca051158e885ccf803ed0027d0ee9352ca6b99b572e22b3fb8",
+      "sourceBytes": 18,
+      "workingSha256": "78e893f213e191ca051158e885ccf803ed0027d0ee9352ca6b99b572e22b3fb8",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_kill_enemy.json",
+      "sourceSha256": "9d3399e3dc742232f0ee49fb654f1dc600bfc81821c854100b94d6f1bfca4577",
+      "sourceBytes": 219,
+      "workingSha256": "9d3399e3dc742232f0ee49fb654f1dc600bfc81821c854100b94d6f1bfca4577",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_player.json",
+      "sourceSha256": "4711554c18a321fb84dfe8f1b6476cafc78ef41bd901db331f9c027e9c9a7123",
+      "sourceBytes": 388,
+      "workingSha256": "4711554c18a321fb84dfe8f1b6476cafc78ef41bd901db331f9c027e9c9a7123",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_regions.json",
+      "sourceSha256": "4452e24b5e46cc8c6a0758bd7cfebc01c0cd860518aa3db896717688b66c3740",
+      "sourceBytes": 339,
+      "workingSha256": "4452e24b5e46cc8c6a0758bd7cfebc01c0cd860518aa3db896717688b66c3740",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_resurgence.json",
+      "sourceSha256": "904962533eb9b9b239494476bd5989a3a51e8ccdec540d9e52e7b580b4a575eb",
+      "sourceBytes": 104,
+      "workingSha256": "904962533eb9b9b239494476bd5989a3a51e8ccdec540d9e52e7b580b4a575eb",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_shop_chests.json",
+      "sourceSha256": "9a8f2639f382564fbda931b2b4af2b6d98ecb4c40ea717055a60eb8378be13c6",
+      "sourceBytes": 374,
+      "workingSha256": "9a8f2639f382564fbda931b2b4af2b6d98ecb4c40ea717055a60eb8378be13c6",
+      "adjusted": false
+    },
+    {
+      "path": "offline/assets/seed_talents.json",
+      "sourceSha256": "2dff145ef95f46b8e4dd75fd2a0ef95c4a6ad418eda0a574dcf59e41b7490417",
+      "sourceBytes": 42,
+      "workingSha256": "2dff145ef95f46b8e4dd75fd2a0ef95c4a6ad418eda0a574dcf59e41b7490417",
+      "adjusted": false
+    },
+    {
+      "path": "offline/compile-only/com/unity3d/player/UnityPlayerActivity.java",
+      "sourceSha256": "d44a96e5c34a9bea108729e9615d9c4088a5cfea04732e80ae4a980e25e14811",
+      "sourceBytes": 420,
+      "workingSha256": "d44a96e5c34a9bea108729e9615d9c4088a5cfea04732e80ae4a980e25e14811",
+      "adjusted": false
+    },
+    {
+      "path": "offline/java/local/kinja/OfflineActivity.java",
+      "sourceSha256": "4ff74cbb7b37b62702d95e7aad0d695bc0eb5003290db6200896bfdd304bf312",
+      "sourceBytes": 700,
+      "workingSha256": "4ff74cbb7b37b62702d95e7aad0d695bc0eb5003290db6200896bfdd304bf312",
+      "adjusted": false
+    },
+    {
+      "path": "offline/native/build-native.ps1",
+      "sourceSha256": "fe49d5917f8621abf7974774d16ee011ce14c5a7e4437e04bf371a9a547e0c31",
+      "sourceBytes": 1433,
+      "workingSha256": "768f1fce83b1f55f45fa9cdf6d68d8a6b8ce703c64ff5128a49b633bfef9a82e",
+      "adjusted": true
+    },
+    {
+      "path": "offline/native/CMakeLists.txt",
+      "sourceSha256": "6d58b0bce83ae79a251c28874d6f723fb3409e0216bf03465182ba720c6786a4",
+      "sourceBytes": 369,
+      "workingSha256": "6d58b0bce83ae79a251c28874d6f723fb3409e0216bf03465182ba720c6786a4",
+      "adjusted": false
+    },
+    {
+      "path": "offline/native/fusion_batch_plan.h",
+      "sourceSha256": "94edab4518eae2112ea489c2ef5ec1af43e36dac6ec9d5aadd1398d553c32470",
+      "sourceBytes": 2154,
+      "workingSha256": "94edab4518eae2112ea489c2ef5ec1af43e36dac6ec9d5aadd1398d553c32470",
+      "adjusted": false
+    },
+    {
+      "path": "offline/native/offline_bridge.cpp",
+      "sourceSha256": "078cf503caab45cf8a1f51c584eebf3de63dc55d3f7cbcce573742c01e19208a",
+      "sourceBytes": 299603,
+      "workingSha256": "078cf503caab45cf8a1f51c584eebf3de63dc55d3f7cbcce573742c01e19208a",
+      "adjusted": false
+    },
+    {
+      "path": "offline/native/README.md",
+      "sourceSha256": "25322b43234ec3abe114d244bf14a8f54b08a9eb9993dddf0d2a846e7f062f35",
+      "sourceBytes": 65539,
+      "workingSha256": "25322b43234ec3abe114d244bf14a8f54b08a9eb9993dddf0d2a846e7f062f35",
+      "adjusted": false
+    },
+    {
+      "path": "project-atlas/app.js",
+      "sourceSha256": "6e4f539a19fa4a6bbcd586cc048c7b7b4761d4eb4e89196bf6b359695d4a8790",
+      "sourceBytes": 30791,
+      "workingSha256": "3e6deef70a1adc61b88a1c485fc20ad62830e5dd62c1e7a3d053adf76edb37b1",
+      "adjusted": true
+    },
+    {
+      "path": "project-atlas/build_inventory.py",
+      "sourceSha256": "271f94d1fc8843dc11b50af0b77b4b4d1b79fe7862f874906e96e0fa00070fbb",
+      "sourceBytes": 7312,
+      "workingSha256": "6effbcb5843f7119d2f5ed611c4c276a19303f2e1fbc8286927ceed059fb023d",
+      "adjusted": true
+    },
+    {
+      "path": "project-atlas/catalog.json",
+      "sourceSha256": "12f7e14e5ef36df7ba4d70e293a38868a04e0abf859940bf5b9b8810a49286ca",
+      "sourceBytes": 20360,
+      "workingSha256": "12f7e14e5ef36df7ba4d70e293a38868a04e0abf859940bf5b9b8810a49286ca",
+      "adjusted": false
+    },
+    {
+      "path": "project-atlas/index.html",
+      "sourceSha256": "c394a36800ba3735a29259b70bb6e0c720590bf4caba60c295cef85583e66696",
+      "sourceBytes": 1071,
+      "workingSha256": "c394a36800ba3735a29259b70bb6e0c720590bf4caba60c295cef85583e66696",
+      "adjusted": false
+    },
+    {
+      "path": "project-atlas/open.ps1",
+      "sourceSha256": "b9ccad3759c4bdab3aff14e6f6d8f11dab7288db35161e8e5b35721da8a145c2",
+      "sourceBytes": 134,
+      "workingSha256": "e5799a6a717d56bbd01c1f298d54d3f04ac3f0268a2d0b9eafafa0594e14c988",
+      "adjusted": true
+    },
+    {
+      "path": "project-atlas/README.md",
+      "sourceSha256": "d0ea55312f497e9693e1d8173a41b776bd1b9934c00188c8541aa3637c67cb9a",
+      "sourceBytes": 5613,
+      "workingSha256": "0f0354c5913ad79f901115bfee1e2b029a313eaab38f8d42215e3e908cba8320",
+      "adjusted": true
+    },
+    {
+      "path": "project-atlas/style.css",
+      "sourceSha256": "244900c2c6874f5b4c0b4ea0b91d94375c3c1ee81d08a13469011b3465f372b8",
+      "sourceBytes": 8599,
+      "workingSha256": "244900c2c6874f5b4c0b4ea0b91d94375c3c1ee81d08a13469011b3465f372b8",
+      "adjusted": false
+    },
+    {
+      "path": "tools/android/inspect_android_static.py",
+      "sourceSha256": "9f7c830255e39300447dfffa05280663c8bbedca62128f6b81465cb94ef4788b",
+      "sourceBytes": 13252,
+      "workingSha256": "9f7c830255e39300447dfffa05280663c8bbedca62128f6b81465cb94ef4788b",
+      "adjusted": false
+    },
+    {
+      "path": "tools/android/patch_resource_package.py",
+      "sourceSha256": "aea0c15a12097b69bc25763bafe50b0aff694657940718ff655b2dabfbde40d4",
+      "sourceBytes": 4081,
+      "workingSha256": "aea0c15a12097b69bc25763bafe50b0aff694657940718ff655b2dabfbde40d4",
+      "adjusted": false
+    },
+    {
+      "path": "tools/android/prepare_offline_lab.py",
+      "sourceSha256": "c8fdac8330b2d99e16d84e11caa9a452e1e05aeca14d71193c0c9b5669b471d7",
+      "sourceBytes": 10070,
+      "workingSha256": "c8fdac8330b2d99e16d84e11caa9a452e1e05aeca14d71193c0c9b5669b471d7",
+      "adjusted": false
+    },
+    {
+      "path": "tools/android/repack_apk.py",
+      "sourceSha256": "b207014740caa111a56afbbb676b86b9faf91fc64c5a9fa4a340c4f8ac432491",
+      "sourceBytes": 7947,
+      "workingSha256": "b207014740caa111a56afbbb676b86b9faf91fc64c5a9fa4a340c4f8ac432491",
+      "adjusted": false
+    },
+    {
+      "path": "tools/android/sign_apk.ps1",
+      "sourceSha256": "d977574762509408c9a0c5f9d55059876f64c43b580a8f95abb17c9573a57fcd",
+      "sourceBytes": 3258,
+      "workingSha256": "e23ca0bb5c4d7452518ae8a39d1e93c9a4c50804c586a7223d832e9887090a74",
+      "adjusted": true
+    },
+    {
+      "path": "tools/bundles/extract_bundles.py",
+      "sourceSha256": "fb6bfe86a61295d14bb9143e614c0e5e9bf1a0837a3ed5bdfc5ec72f8e4aeed7",
+      "sourceBytes": 4151,
+      "workingSha256": "fb6bfe86a61295d14bb9143e614c0e5e9bf1a0837a3ed5bdfc5ec72f8e4aeed7",
+      "adjusted": false
+    },
+    {
+      "path": "tools/bundles/find_bootstrap_assets.py",
+      "sourceSha256": "251e42b643dd58288c2153e50b07c68ab46b2e2dc14955d9dba15f858736ea4e",
+      "sourceBytes": 2568,
+      "workingSha256": "251e42b643dd58288c2153e50b07c68ab46b2e2dc14955d9dba15f858736ea4e",
+      "adjusted": false
+    },
+    {
+      "path": "tools/bundles/nrbf_reader.py",
+      "sourceSha256": "73090156e60928a9102185178704a279ee6c7b016d5afab623845be1a671aa53",
+      "sourceBytes": 6845,
+      "workingSha256": "73090156e60928a9102185178704a279ee6c7b016d5afab623845be1a671aa53",
+      "adjusted": false
+    },
+    {
+      "path": "tools/bundles/summarize_content.py",
+      "sourceSha256": "323781e224d49eb5d643f3ed7c49f286c3fe76d56145e945921301a8c7cc77f9",
+      "sourceBytes": 4507,
+      "workingSha256": "323781e224d49eb5d643f3ed7c49f286c3fe76d56145e945921301a8c7cc77f9",
+      "adjusted": false
+    },
+    {
+      "path": "tools/bundles/trace_bootstrap.py",
+      "sourceSha256": "e0780d3ebcf10a509f134373614de91cdfbdb0f3a7ade4211c6ccf6f9f22f81c",
+      "sourceBytes": 3653,
+      "workingSha256": "e0780d3ebcf10a509f134373614de91cdfbdb0f3a7ade4211c6ccf6f9f22f81c",
+      "adjusted": false
+    },
+    {
+      "path": "tools/metadata/extract_fight_models.py",
+      "sourceSha256": "91c19b3bdb8d0ee570a8322f6f4a45c990315744729998520e9f4ccb5b241235",
+      "sourceBytes": 1743,
+      "workingSha256": "91c19b3bdb8d0ee570a8322f6f4a45c990315744729998520e9f4ccb5b241235",
+      "adjusted": false
+    },
+    {
+      "path": "tools/metadata/index_game_types.py",
+      "sourceSha256": "0c886f3a897c1055b51980498236308cc040f203c355eba4cd7aff37cf181a1f",
+      "sourceBytes": 3079,
+      "workingSha256": "0c886f3a897c1055b51980498236308cc040f203c355eba4cd7aff37cf181a1f",
+      "adjusted": false
+    },
+    {
+      "path": "tools/metadata/map_native_patch.py",
+      "sourceSha256": "9927b9b6fe218f0c11b92030d4d90f1af8a7710724e664370f91d8abb887d70d",
+      "sourceBytes": 3313,
+      "workingSha256": "9927b9b6fe218f0c11b92030d4d90f1af8a7710724e664370f91d8abb887d70d",
+      "adjusted": false
+    },
+    {
+      "path": "tools/metadata/native_xrefs.py",
+      "sourceSha256": "198f7008a43377564d81a21309bc3abbf11bc8d17acf7323899070098689740d",
+      "sourceBytes": 1133,
+      "workingSha256": "198f7008a43377564d81a21309bc3abbf11bc8d17acf7323899070098689740d",
+      "adjusted": false
+    },
+    {
+      "path": "tools/metadata/recover_metadata.py",
+      "sourceSha256": "0300e1577138e9ff0cfc19c27f4c794745dfbe6a814be9aab7d9a280c4d5b129",
+      "sourceBytes": 8515,
+      "workingSha256": "0300e1577138e9ff0cfc19c27f4c794745dfbe6a814be9aab7d9a280c4d5b129",
+      "adjusted": false
+    },
+    {
+      "path": "tools/metadata/recover_native_stripes.py",
+      "sourceSha256": "32308f06c2758aecead4c269c81e681917d41fbdf8b19aac508116ca80a860a3",
+      "sourceBytes": 2427,
+      "workingSha256": "32308f06c2758aecead4c269c81e681917d41fbdf8b19aac508116ca80a860a3",
+      "adjusted": false
+    },
+    {
+      "path": "tools/metadata/trace_offline_player.py",
+      "sourceSha256": "4f5f96aa3ed3244c50bcc56927510e8c0fb93defe7e53bb19a2a39aa92e8fbd0",
+      "sourceBytes": 3816,
+      "workingSha256": "4f5f96aa3ed3244c50bcc56927510e8c0fb93defe7e53bb19a2a39aa92e8fbd0",
+      "adjusted": false
+    },
+    {
+      "path": "tools/native/decode_code_stripes.py",
+      "sourceSha256": "9e4a9ea422f18db46fdf47828552a4f7e7230d8f488b77cbc58b2351684bd94e",
+      "sourceBytes": 959,
+      "workingSha256": "9e4a9ea422f18db46fdf47828552a4f7e7230d8f488b77cbc58b2351684bd94e",
+      "adjusted": false
+    },
+    {
+      "path": "tools/native/elf_probe.py",
+      "sourceSha256": "0ba49c2457f87015a64ed993e1ec0321a593c8b3d331671920a7750b86ffa7a7",
+      "sourceBytes": 3510,
+      "workingSha256": "0ba49c2457f87015a64ed993e1ec0321a593c8b3d331671920a7750b86ffa7a7",
+      "adjusted": false
+    },
+    {
+      "path": "tools/native/map_game_methods.py",
+      "sourceSha256": "31ba6144caaa45b7e0789e15aef2b0066da72d1e5408cd8857faef6df1ea68c6",
+      "sourceBytes": 2397,
+      "workingSha256": "31ba6144caaa45b7e0789e15aef2b0066da72d1e5408cd8857faef6df1ea68c6",
+      "adjusted": false
+    },
+    {
+      "path": "tools/native/recover_rodata.py",
+      "sourceSha256": "5128134d60c75652253ce8ee4bb523f4976a8259eb7902055e6c0048addae94d",
+      "sourceBytes": 1409,
+      "workingSha256": "5128134d60c75652253ce8ee4bb523f4976a8259eb7902055e6c0048addae94d",
+      "adjusted": false
+    },
+    {
+      "path": "tools/native/trace_game_native.py",
+      "sourceSha256": "70e20efc3483f9875487c6fc886b09975be0b44169222bf0f846b1be1fea433b",
+      "sourceBytes": 1903,
+      "workingSha256": "70e20efc3483f9875487c6fc886b09975be0b44169222bf0f846b1be1fea433b",
+      "adjusted": false
+    },
+    {
+      "path": "tools/organization/prepare_plan.py",
+      "sourceSha256": "ef4bf7dec74879638e6d9480f45feccaf3e204d238a36db527a7140c9520bd22",
+      "sourceBytes": 19827,
+      "workingSha256": "ef4bf7dec74879638e6d9480f45feccaf3e204d238a36db527a7140c9520bd22",
+      "adjusted": false
+    }
+  ]
+}

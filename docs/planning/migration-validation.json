@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-03",
+  "copiedSourceFiles": 72,
+  "immutableRuntimeAndSeedFiles": 18,
+  "sourceHashMatch": true,
+  "sourcePreserved": true,
+  "originalApkSha256": "7953eb369ba9b8c814c4736dac4a7e3aa116a5583837f6f12d795ea70c20595e",
+  "nativeBuild": "passed (one existing unused-parameter warning)",
+  "nativeLibrarySha256": "125b4d555d6ff04e5934ce0a59505cbca2b117cbd72c482d00d4c7d06df62a9f",
+  "wrapperContract": "passed",
+  "wrapperDexSha256": "cbb4731d4a5f995205144e42bf287a8432d2c999ff862ac52b93bdd909224e7c",
+  "pythonSyntax": "passed",
+  "powerShellSyntax": "passed in final destination",
+  "javascriptSyntax": "passed in staged working copy",
+  "atlasConfigured": {
+    "methods": 30708,
+    "hooks": 33,
+    "externalReferences": 3
+  },
+  "atlasWithoutConfiguration": "passed in stage: systems/documents/hooks retained, 3 missing references declared",
+  "browser": "overview, external APK path, dependency graph selection checked; no console errors",
+  "gitExclusions": "checked; APK/credentials/toolchains/generated output/config excluded",
+  "credentialPatternScan": "no high-confidence private-key/GitHub-token/AWS-access-key patterns in candidate files; not a guarantee of content suitability",
+  "gameplayChanges": false,
+  "apkPackaged": false,
+  "apkInstalled": false,
+  "blueStacks": "not tested",
+  "gitCommit": false,
+  "gitPush": false,
+  "historicalBuildIdGuard": "v110-readiness-main-fresh-login rejected before creating outputs",
+  "elfArchitecture": "ELF64 / AArch64 verified"
+}

@@ -1,0 +1,9 @@
+{
+  "archiveRoot": "",
+  "originalApk": "kinja-run-1-9-1.apk",
+  "ndkDirectory": "tools/android/native-toolchain/android-ndk-r27d",
+  "toolchainDirectory": "tools/android/toolchain",
+  "keystore": "build/offline-lab.jks",
+  "storePasswordFile": "build/offline-lab.keystore-password.txt",
+  "methodMap": "analysis/native/game-method-map.json"
+}
