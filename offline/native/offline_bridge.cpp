@@ -3742,12 +3742,29 @@ Obj reward_hangup_hook(int16_t reward_type, Method) {
     return task;
 }
 
+bool qa_hero_combat_enabled() {
+#ifdef KINJA_OFFLINE_QA_HERO_COMBAT
+    // Exact Android filesDir suffix: never enable this assist in a normal package.
+    const std::string suffix = "/com.habby.kinjarun.offline.qa.heroes/files";
+    return files_dir.size() >= suffix.size() &&
+        files_dir.compare(files_dir.size()-suffix.size(),suffix.size(),suffix) == 0;
+#else
+    return false;
+#endif
+}
+
 bool deduct_enemy_hp_hook(Obj self, int32_t enemy_id, int64_t damage, UnityVector3 point,
                           bool is_element_crit, int32_t source_type, SkillTriggerData trigger,
                           Obj hit_resource, int32_t attenuation_type, UnityVector3 euler_angles,
                           int32_t attack_element, Obj enemy_buff_ids, bool force_crit,
                           bool disabled_emit, bool main_attack, bool without_anything, Method method) {
     const int64_t original_damage = damage;
+    if (qa_hero_combat_enabled() && damage > 0) {
+        damage = std::max<int64_t>(damage,1000000);
+        if (outgoing_damage_logs.load() < 8)
+            LOGI("QA heroes combat hit enemy=%d damage=%lld->%lld",enemy_id,
+                static_cast<long long>(original_damage),static_cast<long long>(damage));
+    }
     if (active_region.load() == 3 && damage > 0) damage = damage < 9999 ? 9999 : damage;
     unsigned log_index = outgoing_damage_logs.fetch_add(1);
     if (active_region.load() == 3 && log_index < 8)
@@ -3762,6 +3779,11 @@ bool deduct_enemy_hp_hook(Obj self, int32_t enemy_id, int64_t damage, UnityVecto
 void deduct_player_hp_hook(Obj self, int32_t damage, bool force_kill, UnityVector3 damage_pos,
                            bool is_trap, bool show_hp_popup, int32_t entity_id, Method method) {
     const int32_t original_damage = damage;
+    if (qa_hero_combat_enabled() && damage > 0 && !force_kill) {
+        damage = 0;
+        if (incoming_damage_logs.load() < 8)
+            LOGI("QA heroes combat protection damage=%d->0 trap=%d",original_damage,is_trap);
+    }
     if (active_region.load() == 3 && damage > 0 && !force_kill) damage = (damage + 9) / 10;
     unsigned log_index = incoming_damage_logs.fetch_add(1);
     if (active_region.load() == 3 && log_index < 8)

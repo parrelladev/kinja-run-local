@@ -1,0 +1,50 @@
+{
+  "build": "v127-qa-heroes-combat-assist",
+  "package": "com.habby.kinjarun.offline.qa.heroes",
+  "apkSha256": "24dcdba57ffeb9324911340c1d3930c9f95778d699a9a35e861d101b4083214a",
+  "nativeSha256": "b61184be02b6d09f5a387868f7143da108769a748eb1a985d894824c0378c1a4",
+  "observed": [
+    "11-03 19:09:17.123 12757 12849 I KinjaOffline: QA heroes combat hit enemy=-22868 damage=35->1000000",
+    "11-03 19:09:18.589 12757 12849 I KinjaOffline: QA heroes combat hit enemy=-22728 damage=35->1000000",
+    "11-03 19:09:28.656 12757 12849 I KinjaOffline: QA heroes combat protection damage=169->0 trap=1",
+    "11-03 19:09:29.256 12757 12849 I KinjaOffline: QA heroes combat protection damage=169->0 trap=1",
+    "11-03 19:09:37.855 12757 12849 I KinjaOffline: QA heroes combat hit enemy=-30368 damage=12->1000000",
+    "11-03 19:09:37.955 12757 12849 I KinjaOffline: QA heroes combat hit enemy=-31224 damage=12->1000000",
+    "11-03 19:09:39.173 12757 12849 I KinjaOffline: QA heroes combat hit enemy=-30256 damage=35->1000000",
+    "11-03 19:09:39.523 12757 12849 I KinjaOffline: QA heroes combat hit enemy=-31000 damage=12->1000000",
+    "11-03 19:09:39.723 12757 12849 I KinjaOffline: QA heroes combat hit enemy=-31112 damage=35->1000000",
+    "11-03 19:09:56.390 12757 12849 I KinjaOffline: QA heroes combat hit enemy=-37414 damage=12->1000000",
+    "11-03 19:10:11.292 12757 12849 I KinjaOffline: QA heroes combat protection damage=169->0 trap=1",
+    "11-03 19:10:13.409 12757 12849 I KinjaOffline: QA heroes combat protection damage=169->0 trap=1",
+    "11-03 19:10:13.910 12757 12849 I KinjaOffline: QA heroes combat protection damage=169->0 trap=1",
+    "11-03 19:10:43.672 12757 12849 I KinjaOffline: QA heroes combat protection damage=208->0 trap=1",
+    "11-03 19:10:45.189 12757 12849 I KinjaOffline: QA heroes combat protection damage=208->0 trap=1",
+    "11-03 19:13:25.145 12757 12849 I KinjaOffline: Local reward persisted ItemId=6001 Count=366",
+    "11-03 19:13:25.145 12757 12849 I KinjaOffline: Local reward persisted ItemId=20006 Count=3",
+    "11-03 19:13:25.145 12757 12849 I KinjaOffline: Local reward persisted ItemId=20003 Count=4",
+    "11-03 19:13:25.145 12757 12849 I KinjaOffline: Local reward persisted ItemId=20005 Count=1",
+    "11-03 19:13:25.150 12757 12849 I KinjaOffline: Local EndGame settlement passed=1 gold=720 diamonds=299 exp=0",
+    "11-03 19:13:25.154 12757 12849 I KinjaOffline: stage=fight_reply Original EndGame completed offline; passed=1 firstWin=1 milestone100=0 newChapter=1 itemStacks=4 equipmentRewards=0"
+  ],
+  "rewardLogSha256": "11ed3f806d8b6dd09d2418a7cecf53a55b5004aa5e952f91444442737503c643",
+  "trainingCounterScreenshotSha256": "4c8a4535617cea5f8ab9c9bf021e54e3cbe2d6a7ea0837e28fb55722dbf1cfe0",
+  "restart": {
+    "pid": 14144,
+    "existingItemsLoaded": true,
+    "initialized": true,
+    "manualCounterAfterRestartVerified": false,
+    "reason": "Concurrent user interaction; no automated consumption"
+  },
+  "rawSha256": {
+    "v127-build-output.txt": "a62251194915b325e4a61e10f1d411959fa7f6fa17a73713df3bba59f1a78461",
+    "v127-chapter6.png": "0bb5d9a66b327a95915132cabb32b5ed7c49271324c2fd9d3680b661ebca98f1",
+    "v127-current.png": "9ffcaba698677dd360a0db58d8f42ac14b655dc1295f8a6e7b92ca3e5f04ead2",
+    "v127-home.png": "ddb5f6938346676cb62322a49939f3a4fa9827a91083fe39ecf5f2c8e476f57b",
+    "v127-manual-counter.png": "4c8a4535617cea5f8ab9c9bf021e54e3cbe2d6a7ea0837e28fb55722dbf1cfe0",
+    "v127-package-after.txt": "dd42590d1636fb92008823948e0e098868b6f2b5f9092fed2ce21b42a4e03ccd",
+    "v127-package-before.txt": "d1a1a19cc5b5146c89d9bdc691e0982def8318dee66531ece0fcf89f3232f0eb",
+    "v127-restart-home.png": "6d830f6e8a831a6970e8b509e962e587a45cc1b6acafd40738f156bced54d2bf",
+    "v127-restart-log.txt": "9e7a9f3c229010745b3d1cda2cd2d99d7f8f929930ef81510a66bf19f2c8f3e7",
+    "v127-reward-investigation.log": "11ed3f806d8b6dd09d2418a7cecf53a55b5004aa5e952f91444442737503c643"
+  }
+}

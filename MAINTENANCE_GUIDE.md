@@ -1,5 +1,10 @@
 # Guia de manutenção do Kinja Run offline
 
+## QA Heróis forte — v127; vitória com366 manuais
+
+[Build QA e evidências](docs/testing/HERO_QA_COMBAT_V127.md). Usuário autorizou assistência exclusiva QA: dano mínimo1000000 e dano comum recebido0, por define opt-in + filesDir exato do qa.heroes, sem alterar atributos/saves/economia. Update preservou perfil; normalv126 e biblioteca padrão intactos. Partida do usuário no Chapter13/region14 confirmou assistência, vitória,366manuais6001 e três pilhas de livros persistidos. Após relato de material ausente em Melhorar, reabertura do treino mostrou366/50 e4112ouro. Não reproduzida a ausência anterior; hipótese de refresh não confirmada, sem crédito duplicado/correção especulativa. Ainda falta consumo do manual ganho; tutorial não iniciado. Evidência atual supersede a ausência de drop observado na auditoria anterior.
+
+
 ## Manual do Herói — obtenção natural ainda pendente
 
 [Auditoria de fontes v126](docs/testing/HERO_MATERIAL_V126.md). Usuário relatou combate positivo com novos heróis. Item6001 é Manual do Herói; nível exige ouro+manual (primeira melhoria170+50), estrela usa fragmentos. Pools comuns incluem manual a partir do capítulo6; bridge enfileira drops originais e credita somente em vitória. HangUp offline atual só fornece ouro/EXP104, não manuais. Logs do teste do usuário mostram vitória no capítulo1 sem itens, conforme pool100010. Tentativa instrumental QA no capítulo6/region7 terminou em derrota, sem drops6001 nem gasto de revive;1950ouro/257gemas preservados. Não valida ganho natural: falta drop→vitória→inventário→restart→consumo do material ganho. Nenhuma economia/código/APK alterados; v126 permanece atual. Tutorial não iniciado.

@@ -2,7 +2,8 @@ param(
     [string]$NdkDirectory,
     [switch]$DiagnosticNoWorker,
     [switch]$QaMaxProfile,
-    [switch]$QaFusionRepeats
+    [switch]$QaFusionRepeats,
+    [switch]$QaHeroCombat
 )
 $ErrorActionPreference = 'Stop'
 $offlineNativeRoot = $PSScriptRoot
@@ -17,10 +18,12 @@ if (-not (Test-Path -LiteralPath $offlineCompiler -PathType Leaf)) {
 New-Item -ItemType Directory -Path $offlineBuildRoot -Force | Out-Null
 $offlineSource = Join-Path $offlineNativeRoot 'offline_bridge.cpp'
 $offlineOutput = Join-Path $offlineBuildRoot 'libkinjaoffline.so'
+if ($QaHeroCombat) { $offlineOutput = Join-Path $offlineBuildRoot 'libkinjaoffline-qa-heroes.so' }
 $offlineExtraFlags = @()
 if ($DiagnosticNoWorker) { $offlineExtraFlags += '-DKINJA_OFFLINE_DIAGNOSTIC_NO_WORKER=1' }
 if ($QaMaxProfile) { $offlineExtraFlags += '-DKINJA_OFFLINE_QA_MAX_PROFILE=1' }
 if ($QaFusionRepeats) { $offlineExtraFlags += '-DKINJA_OFFLINE_QA_FUSION_REPEATS=1' }
+if ($QaHeroCombat) { $offlineExtraFlags += '-DKINJA_OFFLINE_QA_HERO_COMBAT=1' }
 & $offlineCompiler -std=c++17 -O2 -Wall -Wextra -fPIC -shared -static-libstdc++ '-Wl,-z,max-page-size=16384' @offlineExtraFlags $offlineSource -o $offlineOutput -llog -landroid -ldl
 if ($LASTEXITCODE -ne 0) { throw "Native compilation failed with code $LASTEXITCODE" }
 Get-FileHash -LiteralPath $offlineOutput -Algorithm SHA256

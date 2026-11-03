@@ -60,10 +60,10 @@
     "nativeSha256": "86644fb763bacb75145c402f8f94c91562e835c4cb319f75c70ab7e71fda41dc"
   },
   {
-    "buildId": "v126-local-heroes",
-    "package": "com.habby.kinjarun.offline.audit1",
-    "apkSha256": "D3C84387656D17BF3CB5FE2E8E6DFCB98F67D04419B7B264474CB775DD02900B",
-    "nativeSha256": "b351e39c02ff370a1dd5af326e846fb0499281db5e93efdf59dace5aba2362aa"
+    "buildId": "v122-qa-hero-minimum-star",
+    "package": "com.habby.kinjarun.offline.qa.heroes",
+    "apkSha256": "9E80972B15A929F440AA36E44C807BF209CB8011DC71095BD8F9F55476305521",
+    "nativeSha256": "171b621fc467836532abd855e97954961d97bbb217b4c810b5fac9b065bba64d"
   },
   {
     "buildId": "v123-qa-hero-unlock-reproduction",
@@ -72,10 +72,10 @@
     "nativeSha256": "aef58d844bfab23a8a7916e6d1724a52dd6b1bbd1c359a1fc7669e4cbabb9870"
   },
   {
-    "buildId": "v122-qa-hero-minimum-star",
+    "buildId": "v124-qa-hero-actions",
     "package": "com.habby.kinjarun.offline.qa.heroes",
-    "apkSha256": "9E80972B15A929F440AA36E44C807BF209CB8011DC71095BD8F9F55476305521",
-    "nativeSha256": "171b621fc467836532abd855e97954961d97bbb217b4c810b5fac9b065bba64d"
+    "apkSha256": "2D211DEB01C262DF2801974B3C9EB1A12D0E4545315E9C5E6455F84512DF105C",
+    "nativeSha256": "1df277caac802339212757cf8cbd4d079334a0c605a78c098933c8f9a550b7ce"
   },
   {
     "buildId": "v125-qa-hero-final",
@@ -84,9 +84,15 @@
     "nativeSha256": "b351e39c02ff370a1dd5af326e846fb0499281db5e93efdf59dace5aba2362aa"
   },
   {
-    "buildId": "v124-qa-hero-actions",
+    "buildId": "v126-local-heroes",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "D3C84387656D17BF3CB5FE2E8E6DFCB98F67D04419B7B264474CB775DD02900B",
+    "nativeSha256": "b351e39c02ff370a1dd5af326e846fb0499281db5e93efdf59dace5aba2362aa"
+  },
+  {
+    "buildId": "v127-qa-heroes-combat-assist",
     "package": "com.habby.kinjarun.offline.qa.heroes",
-    "apkSha256": "2D211DEB01C262DF2801974B3C9EB1A12D0E4545315E9C5E6455F84512DF105C",
-    "nativeSha256": "1df277caac802339212757cf8cbd4d079334a0c605a78c098933c8f9a550b7ce"
+    "apkSha256": "24DCDBA57FFEB9324911340C1D3930C9F95778D699A9A35E861D101B4083214A",
+    "nativeSha256": "b61184be02b6d09f5a387868f7143da108769a748eb1a985d894824c0378c1a4"
   }
 ]
