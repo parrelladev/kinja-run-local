@@ -2,6 +2,8 @@
 
 ## BlueStacks — execução da v111 relatada pelo usuário
 
+Coleta posterior em 03/11/2026: ADB conectado a127.0.0.1:6610, APK audit1 instalado confere com SHA256 da v111; abertura/home observadas e reinício carregou a baseline1500/0/0,inventário0. Android16/API36 com suporte ARM64 anunciado. Rede ativa por Ethernet virtual: execução sem rede e refresh pós-vitória permanecem pendentes. Evidências e limites em [BLUESTACKS.md](docs/testing/BLUESTACKS.md). O parágrafo seguinte registra o relato anterior à coleta instrumental.
+
 Em 03/11/2026, o usuário informou que conseguiu executar normalmente o APK v111 no BlueStacks. Evidência por relato do usuário, sem captura/logs ou inspeção por este agente. Não promover esse resultado a validação do refresh pós-vitória, persistência, execução sem rede ou bateria completa. Detalhes e pendências em [docs/testing/BLUESTACKS.md](docs/testing/BLUESTACKS.md). Os registros anteriores de BlueStacks não testado referem-se ao momento da migração.
 
 

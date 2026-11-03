@@ -2,6 +2,8 @@
 
 ## BlueStacks — execução da v111 relatada pelo usuário
 
+Coleta posterior em 03/11/2026: identidade do APK audit1/v111 conferida por SHA256 via ADB; bootstrap/home observados. Reinício PID3724→4487 recarregou1500ouro/0gemas/0EXP/inventário0. Sem transações ou partida nesta coleta. Rede padrão via Ethernet virtual ainda ativa; offline completo e refresh após vitória não validados. [Ambiente, evidências e limites](docs/testing/BLUESTACKS.md). O relato abaixo antecede esta observação instrumental.
+
 Em 03/11/2026, o usuário informou que conseguiu executar normalmente o APK v111 no BlueStacks. Evidência por relato do usuário, sem captura/logs ou inspeção por este agente. Não promover esse resultado a validação do refresh pós-vitória, persistência, execução sem rede ou bateria completa. Detalhes e pendências em [docs/testing/BLUESTACKS.md](docs/testing/BLUESTACKS.md). Os registros anteriores de BlueStacks não testado referem-se ao momento da migração.
 
 
