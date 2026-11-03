@@ -1,5 +1,10 @@
 # Guia de manutenção do Kinja Run offline
 
+## Manual do Herói — obtenção natural ainda pendente
+
+[Auditoria de fontes v126](docs/testing/HERO_MATERIAL_V126.md). Usuário relatou combate positivo com novos heróis. Item6001 é Manual do Herói; nível exige ouro+manual (primeira melhoria170+50), estrela usa fragmentos. Pools comuns incluem manual a partir do capítulo6; bridge enfileira drops originais e credita somente em vitória. HangUp offline atual só fornece ouro/EXP104, não manuais. Logs do teste do usuário mostram vitória no capítulo1 sem itens, conforme pool100010. Tentativa instrumental QA no capítulo6/region7 terminou em derrota, sem drops6001 nem gasto de revive;1950ouro/257gemas preservados. Não valida ganho natural: falta drop→vitória→inventário→restart→consumo do material ganho. Nenhuma economia/código/APK alterados; v126 permanece atual. Tutorial não iniciado.
+
+
 ## Retenção atual — v126
 
 Limpeza final de03/11/2026 com `clean-builds.ps1 -KeepBuildId v126-local-heroes`: build4947564667→375970459bytes; liberados4571594208bytes. Restam somente APK assinado v126 e relatório de assinatura; hash reconferido `D3C84387656D17BF3CB5FE2E8E6DFCB98F67D04419B7B264474CB775DD02900B`. Acervo externo/dependências/chave/senha/saves Android preservados. Histórico pequeno atualizado; capturas/logs v121–v126 removidos após síntese versionada. A retenção v120 abaixo é histórica.

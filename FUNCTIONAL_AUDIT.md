@@ -1,5 +1,10 @@
 # Auditoria funcional — build offline v31
 
+## Manual do Herói — obtenção natural ainda pendente
+
+[Auditoria de fontes v126](docs/testing/HERO_MATERIAL_V126.md). Usuário relatou combate positivo com novos heróis. Item6001 é Manual do Herói; nível exige ouro+manual (primeira melhoria170+50), estrela usa fragmentos. Pools comuns incluem manual a partir do capítulo6; bridge enfileira drops originais e credita somente em vitória. HangUp offline atual só fornece ouro/EXP104, não manuais. Logs do teste do usuário mostram vitória no capítulo1 sem itens, conforme pool100010. Tentativa instrumental QA no capítulo6/region7 terminou em derrota, sem drops6001 nem gasto de revive;1950ouro/257gemas preservados. Não valida ganho natural: falta drop→vitória→inventário→restart→consumo do material ganho. Nenhuma economia/código/APK alterados; v126 permanece atual. Tutorial não iniciado.
+
+
 ## Heróis — v126 em avaliação
 
 [Contrato e testes](docs/testing/HEROES_V126.md), [síntese/hashes](docs/testing/HEROES_V126.json). Usuário confirmou falha tanto em nível quanto estrelas. Corrigidos Star0 legado (mínimo original1, sem custos), desbloqueio107 conforme Chapter5 e operações locais de seleção/obtenção por fragmentos/nível/estrela. Tabelas e handler IL2CPP originais, journal/fsync/readback/rollback; nenhuma escrita de offsets gerenciados. QA BlueStacks validou seleção4002,1001 nível1→2 (170ouro+50materiais), estrela1→2 (120fragmentos/teto30), obtenção4003 (80fragmentos) e persistência/reseleção após update/restart. Biblioteca final v125 QA idêntica à v126 normal; contagem dos três registros conferida. V126 install-r preservou firstInstallTime e home normal1500/0/0/Nv1/Chapter1, menus bloqueados; sem consumo no perfil normal. Combate, máximos/talentos e falhas de journal injetadas não validados. Nível da conta/reciclagem individual aprovados pelo usuário; tutorial aguarda aprovação de heróis. Não repetir extração do acervo externo.

@@ -1,0 +1,17 @@
+{
+  "date": "2026-11-03",
+  "build": "v126-local-heroes (normal), v125-qa-hero-final (same native)",
+  "item": 6001,
+  "name": "Manual do Herói",
+  "naturalGainValidated": false,
+  "reason": "Chapter6 QA run ended in defeat; no item6001 drop observed",
+  "evidenceSha256": {
+    "after-test.log": "26164d0c45362d475b6ac03248af1c7a233766bc35bcec1f813837b1b676efb9",
+    "chapter6-result.png": "a3817a6877c33e752058791a4c6a9ee16526e7bcaf5581aad2c6eeb8f6ecff39",
+    "chapter6-start.png": "ae05ae9d39dc490aaa617d56c2f9f783e3ee84dcc13ee9e8d8e4c86d8454c5e1",
+    "chapter6.png": "2cb4f4d7b3fc1bf4e4e2d23e6d894e7c6d8499f006bd870eaf41f42807ad8737",
+    "current.log": "60bb0dc31fced48c4ca7968c9ae780f2454419bbba40c9a911287cec1650cad7",
+    "current.png": "3b86e5a6d5da930abbad168870a06720c8dd04421a6c14b32e7242a811e1a3fb",
+    "qa-home.png": "dbe02b24f2794173599bb3f9cde5e962a50a38530fe2ebf94fa113e92c351a8c"
+  }
+}
