@@ -118,6 +118,7 @@ LocalTaskApi reward_hangup_task;
 LocalTaskApi talent_upgrade_task;
 LocalTaskApi local_wear_equip_task;
 LocalTaskApi local_equip_upgrade_task;
+LocalTaskApi local_equip_break_task;
 LocalTaskApi local_equip_onekey_upgrade_task;
 LocalTaskApi local_equip_compound_task;
 LocalTaskApi local_equip_onekey_compound_task;
@@ -3065,6 +3066,178 @@ bool write_fusion_snapshot(const std::string& path, const std::string& data) {
     return success && sync_fusion_directory(path.substr(0, path.find_last_of('/')));
 }
 
+bool local_break_equip(int32_t uid, Roots& roots) {
+    if (equip_compound_in_progress.load() || wear_equip_in_progress.load() || chest_purchase_in_progress.load())
+        return fail("Recycle refused during another equipment transaction");
+    if (access(equip_upgrade_txn_path().c_str(), F_OK) == 0)
+        return fail("Pending equipment journal requires restart before recycling");
+    std::string equipment_before = load_seed("seed_equipment.json");
+    const std::string items_before = load_seed("seed_items.json"), player_before = load_seed("seed_player.json");
+    std::string record;
+    int64_t id = 0, level = 0, quality = 0, part = 0, gold = -1;
+    bool worn = false;
+    if (uid <= 0 || !find_equipment_record(equipment_before, uid, record) ||
+        !json_read_int(record, "EquipId", id) || !json_read_int(record, "Level", level) ||
+        !json_read_int(record, "Quality", quality) || !json_read_int(record, "Part", part) ||
+        !json_read_bool(record, "IsWear", worn) || !json_read_int(player_before, "Coin", gold) ||
+        id <= 0 || id > INT32_MAX || level <= 1 || level > 1000 || quality <= 0 || quality > INT32_MAX ||
+        part <= 0 || part > INT32_MAX || gold < 0 || gold > INT32_MAX || items_before.empty())
+        return fail("Recycle requires a valid upgraded saved piece; level one cannot pay again");
+    // Reject duplicate identities before choosing a saved/live piece.
+    std::unordered_set<int64_t> uids;
+    size_t scan = json_member_value(equipment_before, "EquipsInfo");
+    if (scan == std::string::npos) return false;
+    while ((scan = equipment_before.find("\"Uid\"", scan)) != std::string::npos) {
+        size_t start = equipment_before.rfind('{', scan), end = json_object_end(equipment_before, start);
+        int64_t found = 0;
+        if (end == std::string::npos || !json_read_int(equipment_before.substr(start, end-start), "Uid", found) ||
+            found <= 0 || found > INT32_MAX || !uids.insert(found).second)
+            return fail("Recycle inventory contains invalid or duplicate UIDs");
+        scan = end;
+    }
+    Klass ec = find_class("", "EquipManager"), ic = find_class("", "ItemManager"), pc = find_class("", "PlayerDataManager");
+    Obj em = ec ? singleton(ec, roots) : nullptr, im = ic ? singleton(ic, roots) : nullptr;
+    Obj pm = pc ? singleton(pc, roots) : nullptr;
+    Method get = ec ? find_method(ec, "GetEquipInfoByUid", {"System.Int32"}) : nullptr;
+    Method is_worn = ec ? find_method(ec, "CheckEquipIsWear", {"System.Int32"}) : nullptr;
+    Method get_cfg = ec ? find_method(ec, "GetEquipCfgByIdAndLvAndQuality", {"System.Int32", "System.Int32", "System.Int32"}) : nullptr;
+    Method returns = ec ? find_method(ec, "GetBreakEquipReturn", {"System.Int32", "System.Int32&", "System.Int32&"}) : nullptr;
+    Method on_break = ec ? find_method(ec, "OnBreakEquipData", {"ET.G2C_BreakEquip"}) : nullptr;
+    Method on_equips = ec ? find_method(ec, "OnEquipDataInitResp", {"ET.G2C_EquipData"}) : nullptr;
+    Method on_items = ic ? find_method(ic, "OnItemInit", {"ET.G2C_ItemInfo"}) : nullptr;
+    Method sync = pc ? find_method(pc, "SyncValueToShow", {}) : nullptr;
+    Method set_gold = pc ? find_method(pc, "set_PlayerGold", {"CodeStage.AntiCheat.ObscuredTypes.ObscuredInt"}) : nullptr;
+    Klass oi = find_class("CodeStage.AntiCheat.ObscuredTypes", "ObscuredInt");
+    Method convert = oi ? find_method(oi, "op_Implicit", {"System.Int32"}) : nullptr;
+    Klass jc = find_class("Newtonsoft.Json", "JsonConvert");
+    Method json = jc ? find_method(jc, "DeserializeObject", {"System.String", "System.Type"}) : nullptr;
+    if (!em || !im || !pm || !get || !is_worn || !get_cfg || !returns || !on_break || !on_equips || !on_items ||
+        !sync || !set_gold || !convert || !json) return fail("Original recycle APIs unavailable");
+    auto matches = [&](int expected_level) {
+        Obj piece = nullptr, wear_value = nullptr;
+        void* args[] = {&uid};
+        if (!invoke(get, em, args, "Recycle original piece readback", &piece) || !piece) return false;
+        roots.retain(piece);
+        const std::pair<const char*, int> expected[] = {{"Uid",uid},{"Id",static_cast<int>(id)},
+            {"Quality",static_cast<int>(quality)},{"Level",expected_level},{"Part",static_cast<int>(part)}};
+        for (const auto& value : expected) {
+            Field field = api.class_get_field_from_name(api.object_get_class(piece), value.first);
+            int actual = 0;
+            if (!field) return false;
+            api.field_get_value(piece, field, &actual);
+            if (actual != value.second) return false;
+        }
+        if (!invoke(is_worn, em, args, "Recycle original wear state", &wear_value) || !wear_value) return false;
+        roots.retain(wear_value);
+        void* raw = api.object_unbox(wear_value);
+        return raw && (*static_cast<uint8_t*>(raw) != 0) == worn;
+    };
+    if (!matches(static_cast<int>(level))) return fail("Recycle live/save equipment mismatch");
+    int32_t eid = static_cast<int32_t>(id), lv = static_cast<int32_t>(level), q = static_cast<int32_t>(quality);
+    Obj cfg = nullptr;
+    void* cfg_args[] = {&eid,&lv,&q};
+    if (!invoke(get_cfg, em, cfg_args, "Recycle original equipment config", &cfg) || !cfg) return false;
+    roots.retain(cfg);
+    Field material = api.class_get_field_from_name(api.object_get_class(cfg), "upgrade_item");
+    int32_t item = 0, refund_gold = 0, refund_books = 0;
+    if (!material) return fail("Recycle material field unavailable");
+    api.field_get_value(cfg, material, &item);
+    void* refund_args[] = {&uid,&refund_gold,&refund_books};
+    if (!invoke(returns, em, refund_args, "EquipManager.GetBreakEquipReturn local recycle")) return false;
+    int64_t saved_books = -1;
+    int live_gold = -1, live_books = -1;
+    if (item <= 0 || refund_gold < 0 || refund_books < 0 || (refund_gold == 0 && refund_books == 0) ||
+        !json_get_item_count(items_before, item, saved_books) || saved_books < 0 || saved_books > INT32_MAX ||
+        gold > INT32_MAX-refund_gold || saved_books > INT32_MAX-refund_books ||
+        !read_original_item_count(im, ic, 101, live_gold, roots) ||
+        !read_original_item_count(im, ic, item, live_books, roots) || live_gold != gold || live_books != saved_books)
+        return fail("Recycle invalid return, overflow or live/save currency/material mismatch");
+    std::string equipment_after = equipment_before, items_after = items_before, player_after = player_before;
+    if (!mutate_equipment_upgrade_json(equipment_after, uid, 1) ||
+        !json_add_item(items_after, "ItemsInfo", item, refund_books, "ItemId", "Count") ||
+        !json_set_int(player_after, "Coin", gold+refund_gold)) return false;
+    auto model = [&](const char* name, const std::string& payload) -> Obj {
+        Klass klass = find_class("ET", name);
+        Obj value = klass ? deserialize_local_payload(json, klass, payload, roots) : nullptr;
+        return value;
+    };
+    // Prepare both directions before the first mutation, including response telemetry.
+    Obj equips_new = model("G2C_EquipData", equipment_after), equips_old = model("G2C_EquipData", equipment_before);
+    Obj items_new = model("G2C_ItemInfo", items_after), items_old = model("G2C_ItemInfo", items_before);
+    const std::string response_json = "{\"RpcId\":0,\"Error\":0,\"Message\":\"offline\",\"BreakEquip\":{\"EquipId\":"+
+        std::to_string(id)+",\"EquipLevel\":"+std::to_string(level)+",\"EquipQuality\":"+std::to_string(quality)+
+        "},\"RetItemIds\":[101,"+std::to_string(item)+"],\"RetItemNums\":["+std::to_string(refund_gold)+","+std::to_string(refund_books)+"]}";
+    Obj response = model("G2C_BreakEquip", response_json);
+    auto box_gold = [&](int32_t value) -> Obj {
+        Obj boxed = nullptr; void* args[] = {&value};
+        if (!invoke(convert, nullptr, args, "Recycle ObscuredInt currency", &boxed) || !boxed) return nullptr;
+        return roots.retain(boxed);
+    };
+    Obj gold_new = box_gold(static_cast<int32_t>(gold)+refund_gold), gold_old = box_gold(static_cast<int32_t>(gold));
+    if (!equips_new || !equips_old || !items_new || !items_old || !response || !gold_new || !gold_old) return false;
+    auto apply = [&](Obj equips, Obj items, Obj currency) {
+        void* currency_value = api.object_unbox(currency);
+        if (!currency_value) return false;
+        void* ga[] = {currency_value}, *ea[] = {equips}, *ia[] = {items};
+        // Evaluate every restore callback even if one fails.
+        bool ok = invoke(set_gold, pm, ga, "Recycle PlayerDataManager.set_PlayerGold");
+        ok = invoke(on_items, im, ia, "Recycle ItemManager.OnItemInit") && ok;
+        ok = invoke(on_equips, em, ea, "Recycle EquipManager.OnEquipDataInitResp") && ok;
+        ok = invoke(sync, pm, nullptr, "Recycle PlayerDataManager.SyncValueToShow") && ok;
+        return ok;
+    };
+    const std::string directory = files_dir+"/offline_save/";
+    const std::array<std::pair<const char*,const std::string*>,3> snapshots{{
+        {"equip_upgrade_equipment.before",&equipment_before},{"equip_upgrade_items.before",&items_before},
+        {"equip_upgrade_player.before",&player_before}}};
+    for (const auto& snapshot : snapshots)
+        if (!write_fusion_snapshot(directory+snapshot.first,*snapshot.second)) return fail("Recycle snapshot failed before mutation");
+    if (!write_fusion_snapshot(equip_upgrade_txn_path(), "{\"kind\":\"recycle\",\"uid\":"+std::to_string(uid)+"}\n"))
+        return fail("Recycle journal failed before mutation");
+    auto rollback = [&]() {
+        bool ok = write_fusion_snapshot(directory+"seed_equipment.json",equipment_before);
+        ok = write_fusion_snapshot(directory+"seed_items.json",items_before) && ok;
+        ok = write_fusion_snapshot(directory+"seed_player.json",player_before) && ok;
+        bool memory = apply(equips_old,items_old,gold_old);
+        if (ok && memory && (unlink(equip_upgrade_txn_path().c_str()) == 0 || errno == ENOENT) && sync_fusion_directory(directory))
+            for (const auto& snapshot : snapshots) unlink((directory+snapshot.first).c_str());
+        LOGE("Recycle rollback save=%d memory=%d; journal retained on failure",ok,memory);
+        return false;
+    };
+    LOGI("Recycle plan uid=%d id=%lld level=%lld->1 quality=%lld part=%lld wear=%d gold=%d item=%d count=%d",
+         uid,(long long)id,(long long)level,(long long)quality,(long long)part,worn,refund_gold,item,refund_books);
+    if (!write_fusion_snapshot(directory+"seed_equipment.json",equipment_after) ||
+        !write_fusion_snapshot(directory+"seed_items.json",items_after) ||
+        !write_fusion_snapshot(directory+"seed_player.json",player_after) || !apply(equips_new,items_new,gold_new)) return rollback();
+    int after_gold = -1, after_books = -1;
+    if (!matches(1) || !read_original_item_count(im,ic,101,after_gold,roots) ||
+        !read_original_item_count(im,ic,item,after_books,roots) || after_gold != gold+refund_gold ||
+        after_books != saved_books+refund_books || load_seed("seed_equipment.json") != equipment_after ||
+        load_seed("seed_items.json") != items_after || load_seed("seed_player.json") != player_after) return rollback();
+    void* response_args[] = {response};
+    if (!invoke(on_break, em, response_args, "EquipManager.OnBreakEquipData local recycle") ||
+        unlink(equip_upgrade_txn_path().c_str()) != 0) return rollback();
+    if (!sync_fusion_directory(directory)) {
+        // Recreate recovery intent if commit durability cannot be confirmed.
+        write_fusion_snapshot(equip_upgrade_txn_path(), "{\"kind\":\"recycle-commit-uncertain\"}\n");
+        return rollback();
+    }
+    for (const auto& snapshot : snapshots) unlink((directory+snapshot.first).c_str());
+    LOGI("Local recycle committed uid=%d level=%lld->1 gold=%d->%d item=%d count=%d->%d quality/wear preserved",
+        uid,(long long)level,live_gold,after_gold,item,live_books,after_books);
+    return true;
+}
+
+Obj local_equip_break_hook(int32_t uid, Method) {
+    Roots roots;
+    if (equip_upgrade_in_progress.exchange(true))
+        return complete_local_task(local_equip_break_task,nullptr,false,roots);
+    const bool success = local_break_equip(uid,roots);
+    if (!success) LOGE("Local recycle refused uid=%d: %s",uid,last_error.c_str());
+    equip_upgrade_in_progress.store(false);
+    return complete_local_task(local_equip_break_task,nullptr,success,roots);
+}
+
 bool local_onekey_compound(Roots& roots, bool dry_run) {
     if (!dry_run && !reconcile_pending_equip_upgrade()) return false;
     if (equip_upgrade_in_progress.load() || chest_purchase_in_progress.load() || wear_equip_in_progress.load())
@@ -5012,6 +5185,12 @@ bool install_hook(void* library) {
                          reinterpret_cast<uintptr_t>(&local_wear_equip_hook)))
             LOGE("Could not replace online equipment-wear helper: %s", last_error.c_str());
     } else LOGE("Could not configure local equipment-wear task: %s", last_error.c_str());
+    if (equip_helper && configure_task(local_equip_break_task, equip_helper, "BreakEquip", {"System.Int32"}, nullptr)) {
+        const std::array<uint8_t,16> entry = {0xff,0x43,0x01,0xd1,0xf4,0x4f,0x03,0xa9,
+            0xfd,0x7b,0x04,0xa9,0xfd,0x03,0x01,0x91};
+        if (!patch_entry(base, 0x2c2d118, entry, "EquipHelper.BreakEquip", reinterpret_cast<uintptr_t>(&local_equip_break_hook)))
+            LOGE("Could not replace online equipment recycle helper: %s",last_error.c_str());
+    } else LOGE("Could not configure original recycle bool task: %s",last_error.c_str());
     if (equip_helper && configure_task(local_equip_upgrade_task, equip_helper, "UpgradeEquip",
                                        {"System.Int32"}, nullptr)) {
         const std::array<uint8_t,16> upgrade_equip_helper = {

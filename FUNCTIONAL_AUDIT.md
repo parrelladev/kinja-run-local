@@ -1,5 +1,9 @@
 # Auditoria funcional — build offline v31
 
+## Reciclagem no detalhe — v119 QA/v120 normal, 03/11/2026
+
+[Relatório](docs/testing/EQUIPMENT_RECYCLE_V120.md). Bug de nível aprovado pelo usuário como resolvido; foco somente no segundo bug individual. V118 reproduziu NRE no helper ET BreakEquip. V119 confirmou devolução original400ouro/4livros e peça5→1, depois200/2 e peça equipada3→1 com slot preservado. Tudo com peças artificiais em package separado qa.equipbreak. Restart confirmou2100ouro/6livros/3peças nível1 e botão de reciclar ausente; callbacks/readbacks concordantes. V120 normal usa biblioteca idêntica e seeds normais. Sem mudança no celular, itens reais ou outros bugs. Recuperação sob falha, outras faixas e lote não têm teste positivo; correção individual aguarda avaliação do usuário.
+
 ## Nível da conta — validação com saves sintéticos v113–v117
 
 [Relatório QA](docs/testing/ACCOUNT_LEVEL_QA_V116.md). Autorização explícita para save editado, somente em dois packages separados no BlueStacks. Migração 2/5838 → 4/838 e idempotência no restart confirmadas. Nova coleta de151 EXP elevou2/1990 →3/141, com ouro1651/gemas0, home/readback e restart preservados. Defeito de leitura de nível descoberto na v112 corrigido por receiver unboxed na v116 normal, atualizada no audit1. Telefone/acervo não alterados. Isso valida a passagem com EXP acumulada/HangUp em QA, sem validar fórmula de EXP por combate ou save real do celular. Histórico v112 abaixo foi supersedido por esses resultados.

@@ -1,5 +1,9 @@
 # Guia de manutenção do Kinja Run offline
 
+## Reciclagem individual — v120 em avaliação
+
+[Reprodução, contrato e testes](docs/testing/EQUIPMENT_RECYCLE_V120.md). Usuário aprovou nível como resolvido e confirmou falha no detalhe de uma peça. NRE online reproduzida em BreakEquip na v118 QA. V119 QA/v120 normal interceptam helper0x2C2D118 com prólogo conferido, usam GetBreakEquipReturn original, devolvem ouro/livros e retornam peça ao nível1 mantendo UID/qualidade/parte/wear. Modelos preparados, guard/journal/fsync, readback e rollback de saves/managers. Duas peças artificiais q2 foram validadas:5→1 não equipada (+400ouro/4livros) e3→1 equipada (+200/2); restart manteve2100ouro/6livros e as3peças. UI esconde reciclagem em nível1. V120 normal instalada somente no audit1 do BlueStacks, sem seeds QA; package já ausente antes de instalar, portanto instalação nova, não migração do perfil anterior. Nenhuma desinstalação/limpeza executada pelo agente. Lote/fault injection/outras faixas não validados; aguardar avaliação antes de heróis.
+
 ## Nível da conta — teste QA positivo e build normal v116
 
 [Evidências completas](docs/testing/ACCOUNT_LEVEL_QA_V116.md). Usuário autorizou saves artificiais em packages separados. Migração 2/5838 → 4/838 confirmada em runtime e restart; coleta HangUp em outro QA passou 2/1990 +151 EXP → 3/141, ouro1500→1651, home/readback/restart concordantes. Teste revelou receiver boxed incorreto em `GetDecrypted` na v112: corrigido com `object_unbox` na v116 normal. V115 QA e v116 normal usam a mesma biblioteca, sem novas regras de EXP de combate. Audit1 preservado por update, sem importar save do celular. Fixtures em `build.ps1` são opt-in e restritos a packages QA exatos, sem reposição de recursos. Outros bugs aguardam avaliação do usuário.
