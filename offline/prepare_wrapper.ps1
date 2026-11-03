@@ -25,13 +25,15 @@ foreach ($kinjaDir in @($kinjaStubClasses,$kinjaProgramClasses,$kinjaDexDir)) {
 & $kinjaJavac --release 8 -classpath $kinjaAndroidJar -d $kinjaStubClasses (Join-Path $PSScriptRoot 'compile-only\com\unity3d\player\UnityPlayerActivity.java')
 if ($LASTEXITCODE -ne 0) { throw 'Compile-only Unity signature compilation failed' }
 $kinjaClasspath = $kinjaAndroidJar + [IO.Path]::PathSeparator + $kinjaStubClasses
-& $kinjaJavac --release 8 -g -classpath $kinjaClasspath -d $kinjaProgramClasses (Join-Path $PSScriptRoot 'java\local\kinja\OfflineActivity.java')
+$kinjaSources = @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'java\local\kinja') -Filter '*.java' -File | ForEach-Object { $_.FullName })
+& $kinjaJavac --release 8 -encoding UTF-8 -g -classpath $kinjaClasspath -d $kinjaProgramClasses @kinjaSources
 if ($LASTEXITCODE -ne 0) { throw 'Launcher compilation failed' }
 $kinjaStubJar = Join-Path $kinjaOut 'compile-only-stubs.jar'
 & $kinjaJar --create --file $kinjaStubJar -C $kinjaStubClasses 'com/unity3d/player/UnityPlayerActivity.class'
 if ($LASTEXITCODE -ne 0) { throw 'Compile-only classpath packaging failed' }
-# Only the real launcher class is a D8 program input. The stub is classpath-only.
-& $kinjaJava -cp $kinjaD8 com.android.tools.r8.D8 --release --no-desugaring --min-api 23 --lib $kinjaAndroidJar --classpath $kinjaStubJar --output $kinjaDexDir (Join-Path $kinjaProgramClasses 'local\kinja\OfflineActivity.class')
+# Only real wrapper classes are D8 inputs. Unity stubs remain classpath-only.
+$kinjaClasses = @(Get-ChildItem -LiteralPath $kinjaProgramClasses -Recurse -Filter '*.class' -File | ForEach-Object { $_.FullName })
+& $kinjaJava -cp $kinjaD8 com.android.tools.r8.D8 --release --min-api 23 --lib $kinjaAndroidJar --classpath $kinjaStubJar --output $kinjaDexDir @kinjaClasses
 if ($LASTEXITCODE -ne 0) { throw 'Launcher DEX compilation failed' }
 & python (Join-Path $PSScriptRoot 'validate_wrapper.py') --dex (Join-Path $kinjaDexDir 'classes.dex') --report (Join-Path $kinjaOut 'wrapper-report.json')
 if ($LASTEXITCODE -ne 0) { throw 'Launcher DEX contract validation failed' }

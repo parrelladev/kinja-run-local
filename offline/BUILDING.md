@@ -10,7 +10,9 @@ Este diretório acrescenta uma Activity e uma biblioteca JNI ao cliente original
 
 O símbolo JNI correspondente é `Java_local_kinja_OfflineActivity_configure`, implementado em `native/offline_bridge.cpp`. A biblioteca também exporta `JNI_OnLoad`.
 
-A assinatura de `UnityPlayerActivity` em `compile-only/` serve apenas para o compilador Java. Ela não entra no DEX nem substitui a classe do jogo. O compilador usa o `android.jar` oficial API33. D8 recebe somente `OfflineActivity.class` como programa; o stub fica no classpath. `validate_wrapper.py` verifica exatamente uma classe no DEX, o superclass original, o loadLibrary, a referência estática ao AssetManager e a ordem configure→Unity.onCreate.
+Desde v131, antes de configure/Unity.onCreate, o wrapper verifica uma eventual importação manual e sua recuperação, uma vez por processo. Falha incerta encerra antes de iniciar Unity. BackupStore contém codec/validação/transação e BackupCatalog as tabelas de compatibilidade geradas. A interface e o SAF ficam em OfflineActivity; preferências lógicas são lidas/aplicadas pelas APIs IL2CPP originais na thread Unity. Contrato e limites de validação em [MANUAL_BACKUP_V131.md](../docs/testing/MANUAL_BACKUP_V131.md).
+
+A assinatura de `UnityPlayerActivity` em `compile-only/` serve apenas para o compilador Java. Ela não entra no DEX nem substitui a classe do jogo. O compilador usa o `android.jar` oficial API33. D8 recebe as classes reais do wrapper/backup e seus auxiliares; o stub fica apenas no classpath. `validate_wrapper.py` restringe as classes a essas famílias, verifica o superclass original, o loadLibrary, a referência estática ao AssetManager e a ordem configure→Unity.onCreate. A validação histórica de uma única classe abaixo precede o backup manual.
 
 O DEX preparado/validado está em `build/offline-wrapper-setup/dex/classes.dex`, SHA-256 `cbb4731d4a5f995205144e42bf287a8432d2c999ff862ac52b93bdd909224e7c`. A futura injeção o nomeia `classes6.dex`; os cinco DEX originais são preservados.
 

@@ -32,6 +32,7 @@
 #include <vector>
 #include "fusion_batch_plan.h"
 #include "account_progression.h"
+#include "backup_regions.h"
 
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "KinjaOffline", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "KinjaOffline", __VA_ARGS__)
@@ -84,6 +85,11 @@ struct Api {
 std::mutex config_mutex;
 std::mutex status_mutex;
 std::string files_dir;
+JavaVM* backup_vm = nullptr;
+jclass backup_activity = nullptr;
+jmethodID backup_open = nullptr, backup_close = nullptr, backup_prepare = nullptr, backup_complete = nullptr, backup_failed = nullptr;
+using SettingOriginal = void (*)(Obj, Method);
+SettingOriginal original_setting_open = nullptr, original_setting_close = nullptr;
 AAssetManager* assets = nullptr;
 jobject asset_owner = nullptr; // Global Java reference keeps AAssetManager alive.
 std::atomic<bool> configured{false};
@@ -4186,8 +4192,123 @@ void log_fusion_baseline(Obj manager, Roots& roots, const char* stage, bool rebu
          stage, static_cast<long long>(gold), static_cast<long long>(gems), static_cast<long long>(exp), equipment.size());
 }
 
+// JNI only transports immutable bytes / UI notifications. All logical preference APIs
+// below are resolved and invoked on the Unity thread of the existing hooks.
+bool backup_java(jmethodID method, const std::string* argument = nullptr, std::string* result = nullptr) {
+    if (!backup_vm || !backup_activity || !method) return fail("Manual backup Java bridge unavailable");
+    JNIEnv* env = nullptr;
+    bool attached = backup_vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK;
+    if (attached && backup_vm->AttachCurrentThread(&env, nullptr) != JNI_OK) return fail("Cannot attach backup JNI transport");
+    jstring text = argument ? env->NewStringUTF(argument->c_str()) : nullptr;
+    bool ok = !argument || text;
+    if (ok && result) {
+        auto reply = static_cast<jstring>(env->CallStaticObjectMethod(backup_activity, method, text));
+        if (!env->ExceptionCheck() && reply) {
+            const char* chars = env->GetStringUTFChars(reply, nullptr);
+            if (chars) { *result = chars; env->ReleaseStringUTFChars(reply, chars); } else ok = false;
+            env->DeleteLocalRef(reply);
+        } else ok = false;
+    } else if (ok) {
+        if (argument) env->CallStaticVoidMethod(backup_activity, method, text);
+        else env->CallStaticVoidMethod(backup_activity, method);
+    }
+    if (env->ExceptionCheck()) { env->ExceptionClear(); ok = false; }
+    if (text) env->DeleteLocalRef(text);
+    if (attached) backup_vm->DetachCurrentThread();
+    return ok || fail("Manual backup storage operation failed; no success acknowledged");
+}
+
+struct BackupPreference { std::string key; bool obscured; bool boolean; };
+std::vector<BackupPreference> backup_preferences() {
+    std::vector<BackupPreference> result{{"1fight_fail_count",false,false}, {"1drop_die_hint",false,false},
+        {"boxguide_close_1",false,false}, {"_manga_state",true,true}};
+    for (int id : backup_region_ids) result.push_back({"fail_region_"+std::to_string(id),true,false});
+    return result;
+}
+
+bool logical_backup_preferences(std::string& snapshot, const std::string* checkpoint = nullptr) {
+    Roots roots;
+    Klass plain = find_class("UnityEngine", "PlayerPrefs");
+    Klass obscured = find_class("CodeStage.AntiCheat.Storage", "ObscuredPrefs");
+    if (!plain || !obscured) return false;
+    snapshot = "{\"Values\":[";
+    for (const auto& entry : backup_preferences()) {
+        Klass klass = entry.obscured ? obscured : plain;
+        Method has = find_method(klass,"HasKey",{"System.String"},true);
+        Method get = find_method(klass,entry.boolean?"GetBool":"GetInt",{"System.String",entry.boolean?"System.Boolean":"System.Int32"},true);
+        if (!has || !get) return false;
+        Obj key = roots.retain(api.string_new(entry.key.c_str())), boxed = nullptr;
+        void* key_args[] = {key};
+        if (!key || !invoke(has,nullptr,key_args,"Manual backup preference presence",&boxed) || !boxed) return false;
+        roots.retain(boxed); auto present_ptr=static_cast<uint8_t*>(api.object_unbox(boxed));
+        if (!present_ptr) return false;
+        bool present=*present_ptr != 0; int32_t value=0;
+        if (checkpoint) {
+            const std::string needle="\"Key\":\""+entry.key+"\"";
+            size_t pos=checkpoint->find(needle);
+            if(pos==std::string::npos) return fail("Incomplete manual preference checkpoint");
+            size_t end=checkpoint->find('}',pos); int64_t number=0;
+            if(end==std::string::npos) return false;
+            const std::string record=checkpoint->substr(pos,end-pos);
+            if(!json_read_bool(record,"Present",present) || !json_read_int(record,"Value",number) || number<0 || number>INT32_MAX || (entry.boolean && number>1))return fail("Invalid manual preference checkpoint");
+            value=static_cast<int32_t>(number);
+            Method set=find_method(klass,entry.boolean?"SetBool":"SetInt",{"System.String",entry.boolean?"System.Boolean":"System.Int32"},true);
+            Method remove=find_method(klass,"DeleteKey",{"System.String"},true);
+            uint8_t boolean=value != 0;
+            void* args[]={key,entry.boolean?static_cast<void*>(&boolean):static_cast<void*>(&value)};
+            if(!set || !remove || !(present?invoke(set,nullptr,args,"Restore logical manual preference"):invoke(remove,nullptr,key_args,"Remove absent manual preference")))return false;
+        }
+        // Verify every logical readback, including absence, after restoration.
+        boxed=nullptr;
+        if(!invoke(has,nullptr,key_args,"Verify manual preference presence",&boxed) || !boxed)return false;
+        roots.retain(boxed); present_ptr=static_cast<uint8_t*>(api.object_unbox(boxed));
+        if(!present_ptr || (*present_ptr != 0)!=present)return fail("Manual preference presence readback mismatch");
+        int32_t default_int=0; uint8_t default_bool=0;
+        if(present){
+            void* get_args[]={key,entry.boolean?static_cast<void*>(&default_bool):static_cast<void*>(&default_int)};
+            boxed=nullptr;
+            if(!invoke(get,nullptr,get_args,"Read logical manual preference",&boxed) || !boxed)return false;
+            roots.retain(boxed);void* data=api.object_unbox(boxed);if(!data)return false;
+            int32_t actual=entry.boolean?(*static_cast<uint8_t*>(data)!=0):*static_cast<int32_t*>(data);
+            if(actual<0 || (checkpoint && actual!=value))return fail("Manual preference value readback mismatch");
+            value=actual;
+        }
+        if(snapshot.back()!= '[')snapshot+=',';
+        snapshot+="{\"Key\":\""+entry.key+"\",\"Present\":"+(present?"true":"false")+",\"Value\":"+std::to_string(value)+"}";
+    }
+    snapshot+="]}";
+    if(checkpoint){
+        for(Klass klass:{plain,obscured}) {
+            Method save=find_method(klass,"Save",{},true);
+            if(!save || !invoke(save,nullptr,nullptr,"Save restored logical manual preferences"))return false;
+        }
+    }
+    return true;
+}
+
+bool prepare_manual_backup_preferences() {
+    // Normal launches do not touch preference APIs or save files.
+    if(access((files_dir+"/offline_save/local_preferences.json").c_str(),F_OK)!=0)return true;
+    std::string before,checkpoint,readback;
+    return logical_backup_preferences(before) && backup_java(backup_prepare,&before,&checkpoint) &&
+        !checkpoint.empty() && logical_backup_preferences(readback,&checkpoint);
+}
+
+void settings_backup_open_hook(Obj self, Method method) {
+    if(original_setting_open)original_setting_open(self,method);
+    // Synchronous snapshot at a Unity event boundary: no concurrent manager callback can interleave.
+    std::string prefs;
+    if(logical_backup_preferences(prefs)) backup_java(backup_open,&prefs);
+    else { const std::string invalid="{}"; backup_java(backup_open,&invalid); }
+}
+void settings_backup_close_hook(Obj self, Method method) {
+    backup_java(backup_close);
+    if(original_setting_close)original_setting_close(self,method);
+}
+
 bool initialize_original_player(Obj pdm) {
     last_error.clear();
+    if (!prepare_manual_backup_preferences()) return false;
     Roots roots;
     roots.retain(pdm);
     Klass player_class = api.object_get_class(pdm);
@@ -4300,6 +4421,8 @@ void account_init_hook(Obj pdm, Method /*original_method*/) {
     if (initializing.exchange(true)) { LOGE("Recursive/concurrent AccountInit blocked"); return; }
     status("initializing", "Original AccountInit redirected to local response models on Unity thread");
     bool ok = pdm && initialize_original_player(pdm);
+    if (ok) ok = backup_java(backup_complete);
+    if (!ok) backup_java(backup_failed);
     if (ok) status("initialized", "Original player callbacks completed; gameplay still requires runtime validation");
     else status("failed", last_error.empty() ? "Null PlayerDataManager receiver" : last_error);
     initializing.store(false);
@@ -5056,6 +5179,20 @@ bool install_hook(void* library) {
         return fail("Cannot resolve original libil2cpp ASLR base from il2cpp_init");
     uintptr_t base = reinterpret_cast<uintptr_t>(info.dli_fbase);
     if (!patch_entry(base, kAccountInitVa, kExpectedEntry, "AccountInit", reinterpret_cast<uintptr_t>(&account_init_hook))) return false;
+    const std::array<uint8_t,16> setting_open = {
+        0xff,0xc3,0x02,0xd1,0xf9,0x33,0x00,0xf9,0xf8,0x5f,0x07,0xa9,0xf6,0x57,0x08,0xa9};
+    const std::array<uint8_t,16> setting_close = {
+        0xf9,0x0f,0x1b,0xf8,0xf8,0x5f,0x01,0xa9,0xf6,0x57,0x02,0xa9,0xf4,0x4f,0x03,0xa9};
+    // Exact APK 1.9.1 UISetting, not UISettingPage. All four relocated instructions
+    // are stack stores/arithmetic and contain no PC-relative addressing.
+    void* open_trampoline=make_entry_trampoline(base,0x12b4934,setting_open);
+    void* close_trampoline=make_entry_trampoline(base,0x12b587c,setting_close);
+    if(open_trampoline && close_trampoline) {
+        original_setting_open=reinterpret_cast<SettingOriginal>(open_trampoline);
+        original_setting_close=reinterpret_cast<SettingOriginal>(close_trampoline);
+        if(!patch_entry(base,0x12b587c,setting_close,"UISetting.DoClose manual backup",reinterpret_cast<uintptr_t>(&settings_backup_close_hook)))return false;
+        if(!patch_entry(base,0x12b4934,setting_open,"UISetting.DoOpen manual backup",reinterpret_cast<uintptr_t>(&settings_backup_open_hook)))return false;
+    } else return fail("Cannot prepare guarded manual backup settings hooks");
     const std::array<uint8_t,16> main_panel_do_open = {
         0xfc,0x6f,0xba,0xa9, 0xfa,0x67,0x01,0xa9, 0xf8,0x5f,0x02,0xa9, 0xf6,0x57,0x03,0xa9
     };
@@ -5402,16 +5539,26 @@ void wait_for_game() {
 }
 } // namespace
 
-extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM*, void*) {
+extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*) {
+    backup_vm = vm;
     LOGI("Offline bridge loaded; awaiting configure(filesDir, AssetManager)");
     return JNI_VERSION_1_6;
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_local_kinja_OfflineActivity_configure(JNIEnv* env, jclass, jstring directory, jobject manager) {
+Java_local_kinja_OfflineActivity_configure(JNIEnv* env, jclass activity, jstring directory, jobject manager) {
     std::lock_guard<std::mutex> lock(config_mutex);
     if (configured.load()) { LOGI("Bridge already configured in this process"); return; }
     if (!directory || !manager) { LOGE("configure requires filesDir and AssetManager"); return; }
+    backup_activity = static_cast<jclass>(env->NewGlobalRef(activity));
+    backup_open=env->GetStaticMethodID(activity,"settingsOpened","(Ljava/lang/String;)V");
+    backup_close=env->GetStaticMethodID(activity,"settingsClosed","()V");
+    backup_prepare=env->GetStaticMethodID(activity,"preparePreferences","(Ljava/lang/String;)Ljava/lang/String;");
+    backup_complete=env->GetStaticMethodID(activity,"bootstrapComplete","()V");
+    backup_failed=env->GetStaticMethodID(activity,"bootstrapFailed","()V");
+    if(env->ExceptionCheck() || !backup_activity || !backup_open || !backup_close || !backup_prepare || !backup_complete || !backup_failed) {
+        env->ExceptionClear(); LOGE("Manual backup JNI contract unavailable; refusing bridge startup"); return;
+    }
     const char* path = env->GetStringUTFChars(directory, nullptr);
     if (!path) return;
     files_dir = path;

@@ -1,5 +1,11 @@
 # Guia de manutenção do Kinja Run offline
 
+## Backup manual — v131, compilado; validação Android pendente
+
+[Formato, rastreio, transação e testes](docs/testing/MANUAL_BACKUP_V131.md). Configurações/UISetting ganha entrada de backup com exportação/importação pelo seletor local Android. Inclui oito seeds de progresso, dois ledgers opcionais e preferências lógicas de derrotas/dicas/introdução via APIs originais. Formato1, contrato1.9.1, SHA256, esquema/IDs/limites e validação integral; importação confirmada fecha o processo e prepara troca transacional antes de Unity, com recuperação do diretório e preferências anteriores se o bootstrap não confirmar. Sem offsets gerenciados; callbacks na Unity thread. Tutorial só cobre dados que o bridge já persistiu.
+
+Normal `v131-manual-progress-backup`, audit1, APK SHA256 `EB2D0F51BA3F2A73E41CC1FFD507B3023BDB8650F48E2E9E534273A0440A2865`. ARM64, Java/D8, empacotamento/assinatura e testes isolados no host passaram: 1922 verificações/80 cenários de falha. **Não instalada/aberta no Android**: aparência, seletor real, troca entre celulares, recifragem e recuperação no jogo continuam pendentes. Saves Android/acervo externo preservados. V130 foi intermediária não instalada, substituída pela resolução de aliases de caminho na v131. Limpeza concluída: 1993142607→376003227 bytes; só APK v131 e relatório de assinatura, IDs/hashes preservados. A retenção v129 abaixo é histórica.
+
 ## Retenção atual — v129
 
 Limpeza após validação:1891844076→375970459bytes,1515873617 liberados. Mantidos APK assinado v129 e relatório de assinatura, SHA256 `E0E58B2D2B19E88D15254EA1185F7B90B4CE69B54C5E22B2A2A758ECAE0BAA7D`. QA fortev128 continua instalada no Android; intermediários/logs locais removidos após síntese. Acervo externo, dependências, assinatura e saves Android não foram limpos. Registros de retenção v126 abaixo são históricos.

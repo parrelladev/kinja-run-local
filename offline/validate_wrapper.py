@@ -21,9 +21,10 @@ def main():
     if hashlib.sha1(data[32:]).digest()!=data[12:32]: raise ValueError('DEX SHA-1 signature mismatch')
     if zlib.adler32(data[12:]) & 0xffffffff != struct.unpack_from('<I',data,8)[0]: raise ValueError('DEX checksum mismatch')
     dex=Dex(data,str(args.dex))
-    if len(dex.classes)!=1 or dex.classes[0]['name']!='Llocal/kinja/OfflineActivity;':
-        raise ValueError('Only local.kinja.OfflineActivity may be included; compile-only stubs must be excluded')
-    cls=dex.classes[0]
+    allowed=('Llocal/kinja/OfflineActivity','Llocal/kinja/BackupStore','Llocal/kinja/BackupCatalog')
+    if any(not c['name'].startswith(allowed) for c in dex.classes):
+        raise ValueError('Only manual-backup wrapper classes may be included; Unity stubs must be excluded')
+    cls=next(c for c in dex.classes if c['name']=='Llocal/kinja/OfflineActivity;')
     if cls['super']!='Lcom/unity3d/player/UnityPlayerActivity;': raise ValueError('Wrong launcher superclass')
     methods={m['name'].split('->',1)[1]:m for m in cls['methods']}
     config='configure(Ljava/lang/String;Landroid/content/res/AssetManager;)V'
@@ -40,7 +41,7 @@ def main():
         raise ValueError('JNI configure must run before inherited Unity onCreate')
     retained=any(x.get('field')=='Llocal/kinja/OfflineActivity;->assetManager:Landroid/content/res/AssetManager;' for x in create)
     if not retained: raise ValueError('Launcher does not retain its AssetManager')
-    report=dict(dex=str(args.dex.absolute()),sha256=hashlib.sha256(data).hexdigest(),class_count=1,
+    report=dict(dex=str(args.dex.absolute()),sha256=hashlib.sha256(data).hexdigest(),class_count=len(dex.classes),
                 class_name=cls['name'],superclass=cls['super'],jni_export='Java_local_kinja_OfflineActivity_configure',
                 native_library='libkinjaoffline.so',configure_before_unity_onCreate=True,asset_manager_retained=True,
                 compile_only_stubs_excluded=True,onCreate_calls=calls)
