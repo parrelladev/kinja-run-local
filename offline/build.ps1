@@ -5,11 +5,18 @@ param(
     [ValidateSet('None','Migration','RewardBoundary')][string]$AccountProgressionFixture = 'None',
     [switch]$EquipBreakFixture,
     [switch]$HeroFixture,
+    [ValidateSet('None','Source','Destination')][string]$BackupFixture = 'None',
     [switch]$PackageApk
 )
 
 $ErrorActionPreference = 'Stop'
 $kinjaProject = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+if ($BackupFixture -ne 'None') {
+    $kinjaBackupPackage = 'com.habby.kinjarun.offline.qa.backup.' + $BackupFixture.ToLowerInvariant()
+    if ($PackageName -ne $kinjaBackupPackage -or $HeroFixture -or $EquipBreakFixture -or $AccountProgressionFixture -ne 'None') {
+        throw 'Backup fixtures require their exact isolated source/destination QA package and no other fixture'
+    }
+}
 if ($HeroFixture -and ($AccountProgressionFixture -ne 'None' -or $EquipBreakFixture -or
     $PackageName -ne 'com.habby.kinjarun.offline.qa.heroes')) {
     throw 'Hero fixture requires its isolated qa.heroes package and no other fixture'
@@ -125,6 +132,31 @@ if ($HeroFixture) {
         ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_regions.json') -Encoding utf8NoBOM
     $kinjaLabel = 'Kinja QA Herois'
 }
+if ($BackupFixture -ne 'None') {
+    $kinjaFixtureSeeds = Join-Path $kinjaWork 'qa-seeds'
+    New-Item -ItemType Directory -Path $kinjaFixtureSeeds | Out-Null
+    foreach ($kinjaSeed in $kinjaAllSeeds) { Copy-Item -LiteralPath (Join-Path $kinjaSeeds $kinjaSeed) -Destination $kinjaFixtureSeeds }
+    $kinjaSeeds = $kinjaFixtureSeeds
+    $kinjaLabel = 'Kinja QA Backup ' + $BackupFixture
+    if ($BackupFixture -eq 'Source') {
+        $kinjaFixturePlayer = Get-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_player.json') -Raw | ConvertFrom-Json
+        $kinjaFixturePlayer.Level = 3
+        $kinjaFixturePlayer.Exp = 321
+        $kinjaFixturePlayer.Coin = 6543
+        $kinjaFixturePlayer.Diamond = 432
+        $kinjaFixturePlayer.PlayerName = 'QA Backup Source'
+        $kinjaFixturePlayer | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_player.json') -Encoding utf8NoBOM
+        @{SelectRegion=7;MaxRegion=7;MaxRegionProgress=100;SupportGifts=@();RegionsInfo=@(1..7 | ForEach-Object { @{RegionId=$_;IsPass=($_ -lt 7);MaxScore=0;ConsecutiveLostCount=0;DifficultPass=@($false,$false)} })} |
+            ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_regions.json') -Encoding utf8NoBOM
+        @{ItemsInfo=@(@{ItemId=6001;Count=134},@{ItemId=20001;Count=3},@{ItemId=1002;Count=5})} |
+            ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_items.json') -Encoding utf8NoBOM
+        @{EquipsInfo=@(@{EquipId=3002;Uid=1;Level=5;Quality=2;Part=3;IsWear=$true})} |
+            ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_equipment.json') -Encoding utf8NoBOM
+        @{EquipHeroId=4002;HerosInfo=@(@{HeroId=1001;Level=2;Star=1;HeroTalent=@()},@{HeroId=4002;Level=3;Star=2;HeroTalent=@()})} |
+            ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_heroes.json') -Encoding utf8NoBOM
+        @{TalentLevel=2;ExtraTalentLevel=0} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_talents.json') -Encoding utf8NoBOM
+    }
+}
 $kinjaNativeOut = Join-Path $kinjaWork 'libkinjaoffline.so'
 if ($NativeLibrary) {
     Copy-Item -LiteralPath (Resolve-Path -LiteralPath $NativeLibrary).Path -Destination $kinjaNativeOut
@@ -162,7 +194,7 @@ $kinjaPlan = [ordered]@{originalApk=$kinjaOriginal;originalSha256='7953eb369ba9b
     launcher='local.kinja.OfflineActivity';package=$PackageName;dexMember='classes6.dex';
     nativeMember='lib/arm64-v8a/libkinjaoffline.so';nativeSha256=(Get-FileHash -LiteralPath $kinjaNativeOut -Algorithm SHA256).Hash.ToLowerInvariant();
     wrapperDexSha256=(Get-FileHash -LiteralPath (Join-Path $kinjaWork 'wrapper\dex\classes.dex') -Algorithm SHA256).Hash.ToLowerInvariant();
-    seedAssets=$kinjaAllSeeds;accountProgressionFixture=$AccountProgressionFixture;equipBreakFixture=[bool]$EquipBreakFixture;heroFixture=[bool]$HeroFixture;unsignedApk=$kinjaUnsigned;signedApk=$kinjaSigned;packageRequested=[bool]$PackageApk}
+    seedAssets=$kinjaAllSeeds;accountProgressionFixture=$AccountProgressionFixture;equipBreakFixture=[bool]$EquipBreakFixture;heroFixture=[bool]$HeroFixture;backupFixture=$BackupFixture;unsignedApk=$kinjaUnsigned;signedApk=$kinjaSigned;packageRequested=[bool]$PackageApk}
 $kinjaPlan | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $kinjaWork 'build-plan.json') -Encoding utf8
 if (-not $PackageApk) {
     Write-Output ('Build setup prepared. No APK was written. Plan: ' + (Join-Path $kinjaWork 'build-plan.json'))

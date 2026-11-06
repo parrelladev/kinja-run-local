@@ -4,22 +4,12 @@ import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.system.Os;
 import android.system.OsConstants;
-import android.view.Gravity;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import java.io.*;
-import java.util.Arrays;
 import com.unity3d.player.UnityPlayerActivity;
 
 /** Launcher subclass retaining all original Unity lifecycle behavior. */
@@ -27,12 +17,11 @@ public final class OfflineActivity extends UnityPlayerActivity {
     private static AssetManager assetManager;
     private static OfflineActivity current;
     private static boolean processBootChecked;
+    private static volatile boolean nativeBackupVisible;
     private BackupStore backups;
-    private Button backupEntry;
-    private AlertDialog backupDialog;
     private byte[] snapshot, exporting;
     private String snapshotError;
-    private boolean importQueued, busy;
+    private volatile boolean importQueued, busy;
     private static final int EXPORT = 4811, IMPORT = 4812;
 
     static {
@@ -40,6 +29,7 @@ public final class OfflineActivity extends UnityPlayerActivity {
     }
 
     private static native void configure(String filesDirectory, AssetManager manager);
+    private static native void closeBackupWindow() throws IOException;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,32 +63,39 @@ public final class OfflineActivity extends UnityPlayerActivity {
         if (notice != null) message("Backup do progresso", notice);
     }
 
-    /** JNI entry, called synchronously on Unity thread after UISetting.DoOpen. */
-    public static void settingsOpened(String preferences) {
-        OfflineActivity a=current; if(a==null)return;
-        byte[] captured=null; String error=null;
-        try { captured=BackupStore.encode(BackupStore.snapshot(new File(a.getFilesDir(),"offline_save"),preferences)); }
-        catch(IOException e){error=e.getMessage();}
-        final byte[] bytes=captured; final String failure=error;
-        a.runOnUiThread(()->{
-            a.snapshot=bytes; a.snapshotError=failure;
-            if(a.backupEntry!=null)return;
-            Button button=new Button(a); button.setText("Backup do progresso"); button.setTextColor(Color.WHITE);
-            button.setTypeface(Typeface.DEFAULT,Typeface.BOLD); button.setAllCaps(false); button.setTextSize(16);
-            button.setBackground(a.panel(true)); button.setPadding(a.dp(20),a.dp(8),a.dp(20),a.dp(8));
-            button.setOnClickListener(v->a.openBackup());
-            FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,a.dp(52),Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);
-            p.bottomMargin=a.dp(20); a.addContentView(button,p); a.backupEntry=button;
-        });
+    /** Called by native NGUI actions on UnityMain; the snapshot cannot interleave game writes. */
+    public static synchronized void backupAction(String payload) {
+        OfflineActivity a=current;if(a==null || payload==null || payload.length()<2)return;
+        int action=payload.charAt(0)-'0';
+        if(action==0 || action==1){nativeBackupVisible=action==1;return;}
+        if(action==4){a.message("Backup indisponível",payload.substring(2));return;}
+        if(a.busy || a.importQueued)return;
+        a.busy=true;
+        if(action==2){
+            try{
+                a.snapshot=BackupStore.encode(BackupStore.snapshot(new File(a.getFilesDir(),"offline_save"),payload.substring(2)));
+                a.snapshotError=null;a.runOnUiThread(()->a.startExport());
+            }catch(IOException e){a.busy=false;a.message("Não foi possível exportar",e.getMessage());}
+        }else if(action==3)a.runOnUiThread(()->a.startImport());
+        else a.busy=false;
     }
-    public static void settingsClosed() {
-        OfflineActivity a=current;if(a==null)return;
-        a.runOnUiThread(()->{
-            a.snapshot=null;
-            if(a.backupEntry!=null){((ViewGroup)a.backupEntry.getParent()).removeView(a.backupEntry);a.backupEntry=null;}
-            if(a.backupDialog!=null)a.backupDialog.dismiss();
-        });
+    private void closeNativeBackup(){
+        try{
+            java.lang.reflect.Field field=UnityPlayerActivity.class.getDeclaredField("mUnityPlayer");field.setAccessible(true);
+            Object player=field.get(this);
+            java.lang.reflect.Method queue=player.getClass().getDeclaredMethod("queueGLThreadEvent",Runnable.class);queue.setAccessible(true);
+            queue.invoke(player,(Runnable)()->{try{closeBackupWindow();}catch(IOException e){message("Backup",e.getMessage());}});
+        }catch(Exception e){message("Backup","Use o X ou toque fora da janela para fechar.");}
     }
+    @Override public boolean onKeyDown(int key,android.view.KeyEvent event){
+        if(key==android.view.KeyEvent.KEYCODE_BACK && nativeBackupVisible)return true;
+        return super.onKeyDown(key,event);
+    }
+    @Override public boolean onKeyUp(int key,android.view.KeyEvent event){
+        if(key==android.view.KeyEvent.KEYCODE_BACK && nativeBackupVisible){closeNativeBackup();return true;}
+        return super.onKeyUp(key,event);
+    }
+    @Override public void onBackPressed(){if(nativeBackupVisible)closeNativeBackup();else super.onBackPressed();}
     /** Original preference APIs are invoked by C++ on Unity thread, never by the UI worker. */
     public static String preparePreferences(String currentPreferences) throws IOException {
         if(current==null)throw new IOException("Activity indisponível.");
@@ -116,26 +113,9 @@ public final class OfflineActivity extends UnityPlayerActivity {
                 .setCancelable(false).setPositiveButton("Fechar e recuperar",(d,w)->a.closeProcess()).show());
         } catch(IOException e){a.message("Falha na importação","Feche e reabra o jogo para verificar a recuperação.");}
     }
-    private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
-    private GradientDrawable panel(boolean blue){
-        GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,blue?new int[]{0xff8baeff,0xff5279ed}:new int[]{0xff414255,0xff303140});
-        g.setCornerRadius(dp(12));g.setStroke(dp(3),blue?0xff283d88:0xff20212d);return g;
-    }
     private void message(String title,String text){runOnUiThread(()->new AlertDialog.Builder(this).setTitle(title).setMessage(text).setPositiveButton("OK",null).show());}
-    private void openBackup(){
-        if(busy || importQueued)return;
-        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(20),dp(18),dp(20),dp(20));body.setBackground(panel(false));
-        TextView title=new TextView(this);title.setText("Backup do progresso");title.setTextColor(Color.WHITE);title.setTextSize(21);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);body.addView(title);
-        TextView detail=new TextView(this);detail.setText("Guarde uma cópia em Arquivos e transfira para outro celular. A importação substitui o progresso atual e exige reabrir o jogo.");detail.setTextColor(0xffe4e6f3);detail.setPadding(0,dp(12),0,dp(12));body.addView(detail);
-        for(int kind=0;kind<2;kind++){
-            final boolean export=kind==0;Button b=new Button(this);b.setText(export?"Exportar backup":"Importar backup");b.setTextColor(Color.WHITE);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setAllCaps(false);b.setBackground(panel(true));
-            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(52));p.topMargin=dp(10);body.addView(b,p);
-            b.setOnClickListener(v->{backupDialog.dismiss();if(export)startExport();else startImport();});
-        }
-        backupDialog=new AlertDialog.Builder(this).setView(body).setNegativeButton("Voltar",null).create();backupDialog.show();
-    }
     private void startExport(){
-        if(snapshot==null){message("Não foi possível exportar",snapshotError==null?"Reabra as Configurações para capturar o progresso.":snapshotError);return;}
+        if(snapshot==null){message("Não foi possível exportar",snapshotError==null?"Reabra a janela de Backup para capturar o progresso.":snapshotError);return;}
         exporting=snapshot.clone();busy=true;
         try{
             Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/octet-stream").addCategory(Intent.CATEGORY_OPENABLE)

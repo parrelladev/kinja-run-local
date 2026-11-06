@@ -1,0 +1,154 @@
+{
+  "date": "2026-11-06",
+  "normalInstalled": false,
+  "builds": {
+    "v138-qa-backup-sorting-language": {
+      "package": "com.habby.kinjarun.offline.qa.backup.source",
+      "nativeSha256": "9dc7db3af04f74ed56d69162ae10a9e5ab4dbf82446a327be072bfb3222f4103",
+      "wrapperDexSha256": "4788485b354401b46a78ef5a82e69de9064a89fcbdfdc6a501c038e5a5a3ddc4",
+      "backupFixture": "Source",
+      "apkSha256": "314a342994640d68ae3b5fe177d237733ba80f1b7326a797d055c0ce7f6914fe"
+    },
+    "v140-qa-backup-recovery": {
+      "package": "com.habby.kinjarun.offline.qa.backup.destination",
+      "nativeSha256": "9dc7db3af04f74ed56d69162ae10a9e5ab4dbf82446a327be072bfb3222f4103",
+      "wrapperDexSha256": "c25a075953f31a3862d3cea7534b9f44234b9a5abef816cc945fda4a08f9c433",
+      "backupFixture": "Destination",
+      "apkSha256": "37ce9709fe513e34f932694314ea52a75d4b060dabb21a29a24c2b5552d7a06a"
+    },
+    "v141-native-manual-backup": {
+      "package": "com.habby.kinjarun.offline.audit1",
+      "nativeSha256": "9dc7db3af04f74ed56d69162ae10a9e5ab4dbf82446a327be072bfb3222f4103",
+      "wrapperDexSha256": "c25a075953f31a3862d3cea7534b9f44234b9a5abef816cc945fda4a08f9c433",
+      "backupFixture": "None",
+      "apkSha256": "a382cdcff5d740cfbbf51689de00ea655f8fcc12a3d8fc44ea4c87027a711c27"
+    }
+  },
+  "normalSeedAssetsMatch": {
+    "seed_player.json": true,
+    "seed_regions.json": true,
+    "seed_items.json": true,
+    "seed_equipment.json": true,
+    "seed_talents.json": true,
+    "seed_heroes.json": true,
+    "seed_guide.json": true,
+    "seed_shop_chests.json": true
+  },
+  "fixtureGuard": "PASS normal package refused before generated state",
+  "androidUi": "Source export -> Destination import via SAF, cancel/invalid/version999 rejection, X/outside/AndroidBack, Settings, cold restart/equipment screen passed; physical phone/reinstall/full combat/power loss not tested",
+  "roundTrip": {
+    "sourceHash": "f37cdce6b32c53f3063002e2b0cc04cc15ee6b9f54d6b0662e7c9e68644ff2ee",
+    "destinationHash": "f37cdce6b32c53f3063002e2b0cc04cc15ee6b9f54d6b0662e7c9e68644ff2ee",
+    "entries": {
+      "seed_player.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      },
+      "seed_regions.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      },
+      "seed_items.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      },
+      "seed_equipment.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      },
+      "seed_talents.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      },
+      "seed_heroes.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      },
+      "seed_guide.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      },
+      "seed_shop_chests.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      },
+      "hangup_local_state.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      },
+      "local_preferences.json": {
+        "bytesEqual": true,
+        "modelEqual": true
+      }
+    },
+    "settings": [
+      {
+        "Key": "1fight_fail_count",
+        "Present": false,
+        "Value": 0
+      },
+      {
+        "Key": "1drop_die_hint",
+        "Present": false,
+        "Value": 0
+      },
+      {
+        "Key": "boxguide_close_1",
+        "Present": false,
+        "Value": 0
+      },
+      {
+        "Key": "_manga_state",
+        "Present": false,
+        "Value": 0
+      },
+      {
+        "Key": "game_language",
+        "Present": false,
+        "Value": 8
+      },
+      {
+        "Key": "sound_volume",
+        "Present": true,
+        "Type": "float",
+        "Value": 1065353216
+      },
+      {
+        "Key": "music_volume",
+        "Present": true,
+        "Type": "float",
+        "Value": 0
+      },
+      {
+        "Key": "operation_sensitivity",
+        "Present": false,
+        "Type": "float",
+        "Value": 1051260355
+      }
+    ]
+  },
+  "hostResult": "PASS assertions=1943 faultScenarios=80 faultPoints=40; production codec/transaction on host fixtures only; Android fsync/SAF/Unity untested.",
+  "artResult": "PASS assertions=1943 faultScenarios=80 faultPoints=40; production codec/transaction on synthetic ART fixtures; real Android file/directory fsync and Os.rename; injected exceptions/crashes only, no OS kill/power loss; SAF/Unity/private game saves untested.",
+  "artRun": {
+    "runtime": "Android ART app_process",
+    "serial": "127.0.0.1:6610",
+    "androidApi": "36",
+    "remoteSandbox": "/data/local/tmp/kinja-backup-qa-20261106-142307-fa0895bc42f44668b51a1b6a839915fb",
+    "productionSources": {
+      "BackupCatalog.java": "A4D69D14A301CDE1BDE3E69160B1C4D214E47740065E67EC351F08EEA88F7AF7",
+      "BackupStore.java": "0326176AB7D8D0253F12A24B12EDADDFD3F8435EE4214F0AA0F23193BAB3B3F9",
+      "seed_player.json": "4711554C18A321FB84DFE8F1B6476CAFC78EF41BD901DB331F9C027E9C9A7123",
+      "BackupStoreTest.java": "81107725CB56EA863ADA4210418A0A5E2C304605EA998FAD03001E7ACD640D85",
+      "seed_equipment.json": "11CE53E3612F2D84E2EC1B15F1B7CF33B111DFB6BF9E22BA0154D9E2A709BFE4",
+      "seed_heroes.json": "8A14003147E832C1108987837D4000E8A7A567CA49DDD35B6A6650DD0DA8BFE1",
+      "seed_regions.json": "4452E24B5E46CC8C6A0758BD7CFEBC01C0CD860518AA3DB896717688B66C3740",
+      "seed_talents.json": "2DFF145EF95F46B8E4DD75FD2A0EF95C4A6AD418EDA0A574DCF59E41B7490417",
+      "seed_guide.json": "EFC2D3B582591540B8EE41F1D3C87069F71B1B236372787038971A94EAEE4658",
+      "seed_items.json": "78E893F213E191CA051158E885CCF803ED0027D0EE9352CA6B99B572E22B3FB8",
+      "seed_shop_chests.json": "9A8F2639F382564FBDA931B2B4AF2B6D98ECB4C40EA717055A60EB8378BE13C6"
+    },
+    "runnerSha256": "0F8C92D184F45A7A97CB965732BF1A6830BC57BBE23341E2EC1667D2DDFBB1B2",
+    "scope": "Synthetic /data/local/tmp fixtures only; no APK install, private save access, Unity, SAF, OS kill or power-loss validation.",
+    "artifactsRetained": true
+  }
+}

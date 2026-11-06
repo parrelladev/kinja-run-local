@@ -56,7 +56,7 @@ final class BackupStore {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(buffer);
         out.writeLong(0x4b494e4a41424b50L); // KINJABKP
-        out.writeInt(1); out.writeUTF(CLIENT); out.writeInt(files.size());
+        out.writeInt(2); out.writeUTF(CLIENT); out.writeInt(files.size());
         for (String name : FILES) if (files.containsKey(name)) {
             byte[] data = files.get(name);
             out.writeUTF(name); out.writeInt(data.length); out.write(data);
@@ -70,7 +70,7 @@ final class BackupStore {
         if (!MessageDigest.isEqual(hash(body), Arrays.copyOfRange(data, body.length, data.length))) throw invalid();
         DataInputStream in = new DataInputStream(new ByteArrayInputStream(body));
         if (in.readLong() != 0x4b494e4a41424b50L) throw invalid();
-        if (in.readInt() != 1 || !CLIENT.equals(in.readUTF()))
+        if (in.readInt() != 2 || !CLIENT.equals(in.readUTF()))
             throw new IOException("Versão de backup incompatível com este Kinja Run offline 1.9.1.");
         int count = in.readInt(); if (count < 9 || count > FILES.length) throw invalid();
         Map<String, byte[]> files = new LinkedHashMap<>();
@@ -187,9 +187,19 @@ final class BackupStore {
     void saveRecoveryPreferences(String json) throws IOException {
         if (!phase().equals("applying")) return;
         Map<String, byte[]> old = decode(read(at("manual-import.recovery")));
+        File checkpoint = new File(at("manual-import.previous"), "local_preferences.json");
+        if (checkpoint.exists()) {
+            // AccountInit can retry in the same process after a failed original
+            // callback or a partial preference apply. Its new snapshot may already
+            // contain imported values: the first durable recovery is immutable.
+            if (!checkpoint.isFile() || !checkpoint.getCanonicalFile().equals(checkpoint.getAbsoluteFile()) ||
+                    !Arrays.equals(read(checkpoint), old.get("local_preferences.json")))
+                throw new IOException("O checkpoint de recuperação das configurações não passou na conferência.");
+            return;
+        }
         old.put("local_preferences.json", json.getBytes(StandardCharsets.UTF_8)); validate(old);
         atomic(at("manual-import.recovery"), encode(old));
-        atomic(new File(at("manual-import.previous"), "local_preferences.json"), old.get("local_preferences.json"));
+        atomic(checkpoint, old.get("local_preferences.json"));
     }
     String preferences(String current) throws IOException {
         File checkpoint = new File(at("offline_save"), "local_preferences.json");
@@ -201,8 +211,9 @@ final class BackupStore {
         for(Object entry:list(model,"Values")) {
             Map<String,Object> v=obj(entry);
             if(out.length()>11)out.append(',');
-            out.append("{\"Key\":\"").append(v.get("Key")).append("\",\"Present\":").append(bool(v,"Present"))
-                .append(",\"Value\":").append(num(v,"Value",0,Integer.MAX_VALUE)).append('}');
+            out.append("{\"Key\":\"").append(v.get("Key")).append("\",\"Present\":").append(bool(v,"Present"));
+            if ("float".equals(v.get("Type"))) out.append(",\"Type\":\"float\"");
+            out.append(",\"Value\":").append(num(v,"Value",0,0xffffffffL)).append('}');
         }
         return out.append("]}").toString();
     }
@@ -281,10 +292,24 @@ final class BackupStore {
         Set<String> keys=new HashSet<>();
         for(Object entry:list(models.get(FILES[10]),"Values")) {
             Map<String,Object> v=obj(entry); Object key=v.get("Key");
-            if(!(key instanceof String) || !((String)key).matches("1fight_fail_count|1drop_die_hint|boxguide_close_1|_manga_state|fail_region_[1-9][0-9]{0,9}") || !keys.add((String)key))throw invalid();
-            boolean present=bool(v,"Present"); long value=num(v,"Value",0,key.equals("_manga_state")?1:Integer.MAX_VALUE); if(!present && value!=0)throw invalid();
+            if(!(key instanceof String) || !((String)key).matches("1fight_fail_count|1drop_die_hint|boxguide_close_1|_manga_state|game_language|sound_volume|music_volume|operation_sensitivity|fail_region_[1-9][0-9]{0,9}") || !keys.add((String)key))throw invalid();
+            boolean present=bool(v,"Present");
+            boolean floating=key.equals("sound_volume") || key.equals("music_volume") || key.equals("operation_sensitivity");
+            if(floating) {
+                if(!"float".equals(v.get("Type")))throw invalid();
+                long bits=num(v,"Value",0,0xffffffffL); float value=Float.intBitsToFloat((int)bits);
+                if(Float.isNaN(value) || Float.isInfinite(value) || value<0 || value>1)throw invalid();
+                int defaultBits=Float.floatToRawIntBits(key.equals("operation_sensitivity")?0.33f:1f);
+                if(!present && bits!=(defaultBits & 0xffffffffL))throw invalid();
+            } else {
+                if(v.containsKey("Type"))throw invalid();
+                long value=num(v,"Value",0,key.equals("_manga_state")?1:key.equals("game_language")?15:Integer.MAX_VALUE);
+                // An absent language key follows the system on disk; retain its effective
+                // ConfigTool index separately in Value so this bootstrap can refresh safely.
+                if(!present && !key.equals("game_language") && value!=0)throw invalid();
+            }
         }
-        if (!keys.containsAll(Arrays.asList("1fight_fail_count","1drop_die_hint","boxguide_close_1","_manga_state")) || keys.size()!=4+BackupCatalog.REGIONS.length)throw invalid();
+        if (!keys.containsAll(Arrays.asList("1fight_fail_count","1drop_die_hint","boxguide_close_1","_manga_state","game_language","sound_volume","music_volume","operation_sensitivity")) || keys.size()!=8+BackupCatalog.REGIONS.length)throw invalid();
         for(int region:BackupCatalog.REGIONS)if(!keys.contains("fail_region_"+region))throw invalid();
     }
 

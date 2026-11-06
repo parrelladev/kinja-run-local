@@ -1,5 +1,7 @@
 # Backup manual — v131, 03/11/2026
 
+**Registro histórico, substituído pela [v141 nativa](MANUAL_BACKUP_V141.md).** Depois deste registro, o usuário instalou a v131 e relatou ausência do botão e crash em Configurações. O crash foi reproduzido no Android/Houdini; a v141 remove os hooks UISetting e testa a interface nativa e transferência em packages QA separados. A frase abaixo sobre não instalação refere-se somente à execução original de 03/11, não ao estado posterior do aparelho.
+
 Implementação para o APK **1.9.1**, SHA-256 `7953eb369ba9b8c814c4736dac4a7e3aa116a5583837f6f12d795ea70c20595e`. Build normal `v131-manual-progress-backup`, package `com.habby.kinjarun.offline.audit1`, mesmo certificado de desenvolvimento. **Não instalada nem executada no Android nesta tarefa.** Nenhum save Android ou arquivo do acervo externo foi alterado. A v128 QA e as instalações existentes permanecem como estavam. A intermediária v130 foi compilada/assinada, sem instalação; a v131 corrige a resolução de caminhos-pai com aliases Android (`/data/user/0`), mantendo a recusa de arquivos-filho vinculados.
 
 ## Rastreio antes da alteração

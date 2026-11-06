@@ -1,8 +1,12 @@
 # Auditoria funcional — build offline v31
 
-## Backup manual — v131, somente host/compilação
+## Backup manual nativo — v141, validado em QA Android
 
-[Contrato e limites completos](docs/testing/MANUAL_BACKUP_V131.md). Implementados exportação pelo seletor local com sync/readback, importação integral validada e confirmada, formato versionado/SHA256, oito seeds + dois ledgers opcionais + whitelist lógica de preferências originais e recuperação por diretório/checkpoint antes de Unity. Hooks UISetting.DoOpen/DoClose conferidos no APK1.9.1. Testes sintéticos:1922verificações,80cenários nos40pontos de write/rename/sync, mais codec/exportação/validação. ARM64/Java/D8/APK/assinatura conferidos. **Não instalado nem executado:** integração visual, seletores/provedores reais, importação/persistência/rollback no Android e transferência para outro celular exigem validação manual. Nenhum save Android/acervo externo alterado. V128QA continua separada; v131 não herda assistência. Não confundir a nova build disponível com uma atualização aplicada ao aparelho.
+[Contrato, evidências e limites](docs/testing/MANUAL_BACKUP_V141.md). Relato de v131 reproduzido: crash no trampoline UISetting.DoOpen em UnityMain/Houdini. Hooks UISetting retirados; Backup agora usa widgets NGUI originais no StoragePanel real, acima de Configurações. Formato2 inclui todo o perfil local inventariado, ledgers e preferências de progresso/som/música/sensibilidade/idioma. Sem escolha explícita, idioma segue o sistema do destino. Exportação conferida e importação integral no cold start com recuperação de diretório e primeiro checkpoint lógico imutável.
+
+**Passou no jogo, somente QA Source/Destination:** posição do botão, janela, X/fora/Voltar, Configurações sem crash, seletor/exportação, cancelamento de confirmação sem mudança, arquivo inválido, versão999 com hash válido recusada, restore, sucesso após bootstrap, reinício e navegação de equipamento. Destino nível1/1500/0 passou a nível3/321EXP/6543/432/capítulo6; herói e equipamento restaurados. Reexportação dos dez registros e arquivo completo idênticos à origem. Host e Android ART com arquivos artificiais:1943 verificações/80 cenários/40 pontos, fsync/rename reais no ART com falhas injetadas. Não equivale a corte de energia ou falha real de um provedor SAF.
+
+Normalv141 compilada/assinada, sem fixture e com mesmos bridge/DEX da QA destino; **não instalada no perfil do usuário**. Saves pessoais/QA Heróis/acervo externo preservados. Dois celulares físicos, reinstalação, run completa, preferências cifradas não zero e transferência com idioma explicitamente escolhido não tiveram validação visual específica nesta rodada; tutorial continua na limitação anterior. A auditoria v131 antiga não comprova execução Android; o usuário instalou aquela versão depois do seu registro.
 
 ## Heróis e crédito de materiais — RESOLVIDOS, v129
 
