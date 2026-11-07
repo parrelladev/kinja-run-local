@@ -2356,31 +2356,49 @@ bool local_chest_purchase(Obj shop, int chest_id, bool free, Obj effect_point, M
     const int payment_item_cost = draw_count;
     if (draw_count <= 0 || draw_count > 10 || (pay_with_item && open_item_id <= 0))
         return fail("Local chest has invalid configured item payment");
-    if (!pay_with_item && cost <= 0) return fail("Local gem chest has invalid configured price");
+    if (chest_id == 101 && !pay_with_item) cost = 10000;
+    if (!pay_with_item && cost <= 0) return fail("Local chest has invalid configured price");
     Klass item_class = find_class("", "ItemManager");
     Obj items_manager = item_class ? singleton(item_class, roots) : nullptr;
-    int diamonds = -1, payment_item_balance = -1;
+    int diamonds = -1, gold = -1, payment_item_balance = -1;
     if (!items_manager || !read_original_item_count(items_manager, item_class, 102, diamonds, roots)) return false;
+    if (chest_id == 101 && !pay_with_item &&
+        !read_original_item_count(items_manager, item_class, 101, gold, roots)) return false;
     if (pay_with_item && !read_original_item_count(items_manager, item_class, open_item_id, payment_item_balance, roots))
         return false;
-    if ((!pay_with_item && diamonds < cost) || (pay_with_item && payment_item_balance < payment_item_cost)) {
+    if ((!pay_with_item && (chest_id == 101 ? gold : diamonds) < cost) ||
+        (pay_with_item && payment_item_balance < payment_item_cost)) {
         if (pay_with_item) {
             LOGI("Local chest insufficient key count chest=%d item=%d balance=%d cost=%d; forwarding original insufficient-item UI",
                  chest_id, open_item_id, payment_item_balance, payment_item_cost);
             if (original_buy_treasure_chest) original_buy_treasure_chest(shop, chest_id, false, effect_point, original_method);
             return false;
         }
-        LOGI("Local chest purchase insufficient gems chest=%d balance=%d cost=%d; invoking original insufficient-balance UI branch",
-             chest_id, diamonds, cost);
-        if (original_buy_treasure_chest) original_buy_treasure_chest(shop, chest_id, false, effect_point, original_method);
+        LOGI("Local chest purchase insufficient %s chest=%d balance=%d cost=%d",
+             chest_id == 101 ? "coins" : "gems", chest_id, chest_id == 101 ? gold : diamonds, cost);
+        if (chest_id == 101) {
+            Klass ui_class = find_class("", "UIManager");
+            Obj ui = ui_class ? singleton(ui_class, roots) : nullptr;
+            Method show = ui_class ? find_method(ui_class, "ShowPopupTips",
+                {"System.String", "UnityEngine.Color", "System.Boolean"}) : nullptr;
+            Obj message = roots.retain(api.string_new("[ff0000]Moedas insuficientes"));
+            struct { float r, g, b, a; } white{1, 1, 1, 1};
+            uint8_t is_set = 0;
+            void* args[] = {message, &white, &is_set};
+            if (ui && show && message) invoke(show, ui, args, "UIManager.ShowPopupTips insufficient coins");
+        }
+        if (chest_id != 101 && original_buy_treasure_chest)
+            original_buy_treasure_chest(shop, chest_id, false, effect_point, original_method);
         return false;
     }
     const std::string player_before = load_seed("seed_player.json");
     const std::string items_before = load_seed("seed_items.json");
     const std::string equips_before = load_seed("seed_equipment.json");
-    int64_t saved_diamonds = -1, saved_payment_item = -1;
+    int64_t saved_diamonds = -1, saved_gold = -1, saved_payment_item = -1;
     if (player_before.empty() || items_before.empty() || equips_before.empty() ||
         !json_read_int(player_before, "Diamond", saved_diamonds) || saved_diamonds != diamonds ||
+        (chest_id == 101 && !pay_with_item &&
+         (!json_read_int(player_before, "Coin", saved_gold) || saved_gold != gold)) ||
         (pay_with_item && (!json_get_item_count(items_before, open_item_id, saved_payment_item) ||
                            saved_payment_item != payment_item_balance)))
         return fail("Chest purchase refused because live payment balance differs from existing save");
@@ -2396,8 +2414,8 @@ bool local_chest_purchase(Obj shop, int chest_id, bool free, Obj effect_point, M
     Field box_id_field = api.class_get_field_from_name(content_class, "box_id");
     Field weight_field = api.class_get_field_from_name(content_class, "base_weight");
     if (!box_id_field || !weight_field) return false;
-    std::vector<std::pair<int32_t, int32_t>> weighted_content;
-    int64_t total_weight = 0;
+    std::vector<std::pair<int32_t, int32_t>> weighted_content, divine_content;
+    int64_t total_weight = 0, divine_weight = 0;
     for (int32_t cfg_id = first_cfg; cfg_id <= last_cfg; ++cfg_id) {
         void* cfg_args[] = {&cfg_id};
         Obj cfg = nullptr;
@@ -2407,15 +2425,36 @@ bool local_chest_purchase(Obj shop, int chest_id, bool free, Obj effect_point, M
         api.field_get_value(cfg, box_id_field, &pool_id);
         api.field_get_value(cfg, weight_field, &weight);
         if (pool_id != expected_box_id || weight < 0) return fail("TBContentCfg differs from the verified 1.9.1 chest pool");
-        if (weight > 0) { weighted_content.emplace_back(cfg_id, weight); total_weight += weight; }
+        if (weight > 0) {
+            bool divine = false;
+            if (chest_id != 101) {
+                Field item_field = api.class_get_field_from_name(content_class, "item_id");
+                int32_t item_id = 0, special = 0;
+                if (!item_field) return false;
+                api.field_get_value(cfg, item_field, &item_id);
+                void* equip_args[] = {&item_id};
+                Obj equip = nullptr;
+                if (!invoke(get_equip, nullptr, equip_args, "EquipCfg.GetCfg divine pool", &equip) || !equip) return false;
+                roots.retain(equip);
+                Field special_field = api.class_get_field_from_name(api.object_get_class(equip), "special");
+                if (!special_field) return false;
+                api.field_get_value(equip, special_field, &special);
+                divine = special == 1;
+            }
+            if (divine) { divine_content.emplace_back(cfg_id, weight); divine_weight += weight; }
+            else { weighted_content.emplace_back(cfg_id, weight); total_weight += weight; }
+        }
     }
-    if (weighted_content.empty() || total_weight <= 0) return fail("Configured local chest reward pool is empty");
+    if (weighted_content.empty() || total_weight <= 0 || (chest_id != 101 && divine_weight != 32))
+        return fail("Configured local chest reward pool differs from verified 1.9.1 weights");
     static std::atomic<uint64_t> roll_counter{0};
     std::mt19937_64 rng(static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count()) ^ roll_counter.fetch_add(1));
     std::vector<int32_t> content_ids;
     for (int32_t draw = 0; draw < draw_count; ++draw) {
-        int64_t roll = static_cast<int64_t>(rng() % static_cast<uint64_t>(total_weight));
-        for (const auto& candidate : weighted_content) {
+        const bool divine_draw = chest_id != 101 && std::uniform_int_distribution<int>(0, 99)(rng) < 2;
+        const auto& candidates = divine_draw ? divine_content : weighted_content;
+        int64_t roll = std::uniform_int_distribution<int64_t>(0, divine_draw ? divine_weight - 1 : total_weight - 1)(rng);
+        for (const auto& candidate : candidates) {
             if (roll < candidate.second) { content_ids.push_back(candidate.first); break; }
             roll -= candidate.second;
         }
@@ -2500,12 +2539,14 @@ bool local_chest_purchase(Obj shop, int chest_id, bool free, Obj effect_point, M
             finish_chest_purchase_journal();
             return fail("Could not commit chest-key debit; restored saved inventory");
         }
-    } else if (!grant_local_currency_reward(0, 0, roots, -cost)) return false;
+    } else if (!(chest_id == 101 ? grant_local_currency_reward(-cost, 0, roots) :
+                 grant_local_currency_reward(0, 0, roots, -cost))) return false;
     if (!pay_with_item) {
         // Write full item rewards below after the currency debit.
     }
     if (!write_file(items_path, items_after) || !write_file(equips_path, equips_after)) {
         if (pay_with_item) refresh_local_chest_inventory(roots);
+        else if (chest_id == 101) grant_local_currency_reward(cost, 0, roots);
         else grant_local_currency_reward(0, 0, roots, cost);
         write_file(player_path, player_before);
         write_file(items_path, items_before);
@@ -2518,6 +2559,7 @@ bool local_chest_purchase(Obj shop, int chest_id, bool free, Obj effect_point, M
     if (!invoke(on_bought, shop, callback_args, "ShopManager.OnBuyTreasureChestSucceed local purchase") ||
         !refresh_local_chest_inventory(roots)) {
         if (pay_with_item) refresh_local_chest_inventory(roots);
+        else if (chest_id == 101) grant_local_currency_reward(cost, 0, roots);
         else grant_local_currency_reward(0, 0, roots, cost);
         write_file(player_path, player_before);
         write_file(items_path, items_before);
@@ -2531,8 +2573,9 @@ bool local_chest_purchase(Obj shop, int chest_id, bool free, Obj effect_point, M
         LOGI("Local chest purchase committed route=item chest=%d item=%d count=%d->%d contentIds=%s",
              chest_id, open_item_id, payment_item_balance, payment_item_balance - payment_item_cost, content_json.c_str());
     else
-        LOGI("Local chest purchase committed route=currency chest=%d gems=%d->%d contentIds=%s", chest_id, diamonds,
-             diamonds - cost, content_json.c_str());
+        LOGI("Local chest purchase committed route=currency chest=%d currency=%s balance=%d->%d contentIds=%s",
+             chest_id, chest_id == 101 ? "coins" : "gems", chest_id == 101 ? gold : diamonds,
+             (chest_id == 101 ? gold : diamonds) - cost, content_json.c_str());
     return true;
 }
 
@@ -4679,8 +4722,70 @@ void configure_local_ten_draw_chest(Obj self) {
 }
 
 void show_local_ten_draw_chest(Obj self, Method original_method) {
+    // Match the visible 1.9.1 card prices and probability panel to the local
+    // transaction. Config fields are changed through IL2CPP on the Unity thread.
+    Klass box_class = find_class("", "TreasureBoxCfg");
+    Method get_box = box_class ? find_method(box_class, "GetCfg", {"System.Int32"}) : nullptr;
+    for (int32_t id : {101, 108, 115}) {
+        Obj cfg = nullptr;
+        void* args[] = {&id};
+        if (!get_box || !invoke(get_box, nullptr, args, "TreasureBoxCfg.GetCfg Shop display", &cfg) || !cfg) continue;
+        if (id == 101) {
+            Field coin = api.class_get_field_from_name(box_class, "cost_coin");
+            Field diamond = api.class_get_field_from_name(box_class, "cost_diamond");
+            int32_t price = 10000, zero = 0;
+            if (coin && diamond) {
+                api.field_set_value(cfg, coin, &price);
+                api.field_set_value(cfg, diamond, &zero);
+            }
+        } else {
+            Field descriptions = api.class_get_field_from_name(box_class, "probability_desc");
+            Obj entries = nullptr;
+            if (descriptions) api.field_get_value(cfg, descriptions, &entries);
+            Klass array_class = find_class("System", "Array");
+            Method set_value = array_class ? find_method(array_class, "SetValue", {"System.Object", "System.Int32"}) : nullptr;
+            if (entries && set_value) {
+                const char* rates[] = {"unknown_equip$4$c_gold_equip$2%",
+                    "unknown_equip$4$c_epic_equip$4.793382%",
+                    "unknown_equip$3$c_rare_equip$21.693580%",
+                    "unknown_equip$2$c_good_equip$71.513037%"};
+                for (int32_t n = 0; n < 4; ++n) {
+                    Obj entry = api.string_new(rates[n]);
+                    void* value_args[] = {entry, &n};
+                    if (!entry || !invoke(set_value, entries, value_args, "Shop probability description")) break;
+                }
+            }
+        }
+    }
     if (original_treasure_page_update)
         original_treasure_page_update(self, original_method);
+    if (self) {
+        Roots roots;
+        Klass component = find_class("UnityEngine", "Component");
+        Method get_transform = component ? find_method(component, "get_transform", {}, true) : nullptr;
+        Obj root = nullptr;
+        if (get_transform && invoke(get_transform, self, nullptr, "Shop transform for guarantee text", &root) && root) {
+            roots.retain(root);
+            Method find_child = find_method(api.object_get_class(root), "Find", {"System.String"}, true);
+            Klass go_class = find_class("UnityEngine", "GameObject");
+            Method set_active = go_class ? find_method(go_class, "SetActive", {"System.Boolean"}) : nullptr;
+            for (const char* path : {"obj/ContentPanel/Top/ChestBox/TenDiamondBox/txtMinGoodStuff (1)",
+                                     "obj/ContentPanel/Top/ChestBox/DiamondBox/txtMinGoodStuffTips"}) {
+                Obj name = roots.retain(api.string_new(path));
+                void* find_args[] = {name};
+                Obj child = nullptr;
+                if (!find_child || !name || !invoke(find_child, root, find_args, "Find stale chest guarantee", &child) || !child) continue;
+                roots.retain(child);
+                Method get_go = find_method(api.object_get_class(child), "get_gameObject", {}, true);
+                Obj go = nullptr;
+                if (!get_go || !invoke(get_go, child, nullptr, "Chest guarantee GameObject", &go) || !go) continue;
+                roots.retain(go);
+                uint8_t inactive = 0;
+                void* active_args[] = {&inactive};
+                if (set_active) invoke(set_active, go, active_args, "Hide stale chest guarantee");
+            }
+        }
+    }
     configure_local_ten_draw_chest(self);
 }
 

@@ -1,5 +1,9 @@
 # Guia de manutenção do Kinja Run offline
 
+## Baús v148 — normal assinada, não instalada
+
+[Contrato, probabilidades, QA e limites](docs/testing/CHESTS_V148.md). Diamante 115/x10 108: `EquipCfg.special=1` (Divino) recebe exatamente 2% por sorteio comum; demais qualidades preservam a proporção dos pesos originais nos 98%. Bronze 101 usa 10.000 moedas por compra Currency, sem gemas; rota de chave permanece. O cartão QA mostrou preço/ícone de moeda, e uma compra com saldo exato debitou 10.000→0, gemas 0→0 e entregou uma peça. As frases de garantia Épica sem implementação foram ocultadas. Saldo abaixo/acima, persistência pós-reinício e compra x10 em gameplay continuam pendentes porque o BlueStacks perdeu conexão ADB durante esses testes. Normal v148 compilada/assinada, não instalada. As seções de baús v63–v97 abaixo são históricas quanto a preço e distribuição.
+
 ## Backup manual nativo — v141
 
 [Formato 2, rastreio, transação, testes e limites](docs/testing/MANUAL_BACKUP_V141.md); [síntese dos resultados e hashes](docs/testing/MANUAL_BACKUP_V141_RESULTS.json). Backup aparece acima de Configurações no StoragePanel real da home, com widgets NGUI originais e janela funcional. Removidos os hooks UISetting.DoOpen/DoClose que reproduziram crash UnityMain/Houdini após o relato do usuário sobre v131. Configurações abriu/alterou música/fechou no QA sem crash. Não presumir que a UI Android da v131 foi validada: seu registro anterior era somente host, e o usuário a instalou posteriormente.

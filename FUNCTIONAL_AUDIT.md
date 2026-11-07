@@ -1,5 +1,9 @@
 # Auditoria funcional — build offline v31
 
+## Baús v148
+
+[Resultado e limites](docs/testing/CHESTS_V148.md). Teste QA BlueStacks confirmou bronze a 10.000 moedas na tela e compra com saldo exato: débito único 10.000→0, gemas 0→0 e um equipamento. Sorteio Divino de 2% verificado pela configuração e enumeração determinística da categoria; faltam testes de gameplay de insuficiência, saldo acima, reinício e x10. APK normal assinado, não instalado. Registros antigos de 60 gemas para bronze e taxas divergentes são históricos.
+
 ## Backup manual nativo — v141, validado em QA Android
 
 [Contrato, evidências e limites](docs/testing/MANUAL_BACKUP_V141.md). Relato de v131 reproduzido: crash no trampoline UISetting.DoOpen em UnityMain/Houdini. Hooks UISetting retirados; Backup agora usa widgets NGUI originais no StoragePanel real, acima de Configurações. Formato2 inclui todo o perfil local inventariado, ledgers e preferências de progresso/som/música/sensibilidade/idioma. Sem escolha explícita, idioma segue o sistema do destino. Exportação conferida e importação integral no cold start com recuperação de diretório e primeiro checkpoint lógico imutável.

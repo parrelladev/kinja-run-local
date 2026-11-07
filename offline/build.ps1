@@ -5,11 +5,17 @@ param(
     [ValidateSet('None','Migration','RewardBoundary')][string]$AccountProgressionFixture = 'None',
     [switch]$EquipBreakFixture,
     [switch]$HeroFixture,
+    [int]$ChestFixtureCoin = -1,
     [ValidateSet('None','Source','Destination')][string]$BackupFixture = 'None',
     [switch]$PackageApk
 )
 
 $ErrorActionPreference = 'Stop'
+if ($ChestFixtureCoin -ge 0 -and ($ChestFixtureCoin -gt 100000 -or
+    $PackageName -notmatch '^com\.habby\.kinjarun\.offline\.qa\.chests\.(below|exact|above)$' -or
+    $AccountProgressionFixture -ne 'None' -or $EquipBreakFixture -or $HeroFixture -or $BackupFixture -ne 'None')) {
+    throw 'Chest fixture requires an isolated qa.chests package and coin balance at most 100000'
+}
 $kinjaProject = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if ($BackupFixture -ne 'None') {
     $kinjaBackupPackage = 'com.habby.kinjarun.offline.qa.backup.' + $BackupFixture.ToLowerInvariant()
@@ -71,6 +77,18 @@ foreach ($kinjaSeed in $kinjaAllSeeds) { Get-Content -LiteralPath (Join-Path $ki
 if (-not $NativeLibrary -and -not (Test-Path -LiteralPath $kinjaNativeSource)) { throw 'Native bridge source has not landed' }
 [IO.Directory]::CreateDirectory($kinjaWork) | Out-Null
 $kinjaLabel = 'Kinja Run Offline Lab'
+if ($ChestFixtureCoin -ge 0) {
+    $kinjaFixtureSeeds = Join-Path $kinjaWork 'qa-seeds'
+    New-Item -ItemType Directory -Path $kinjaFixtureSeeds | Out-Null
+    foreach ($kinjaSeed in $kinjaAllSeeds) { Copy-Item -LiteralPath (Join-Path $kinjaSeeds $kinjaSeed) -Destination $kinjaFixtureSeeds }
+    $kinjaSeeds = $kinjaFixtureSeeds
+    $kinjaFixturePlayer = Get-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_player.json') -Raw | ConvertFrom-Json
+    $kinjaFixturePlayer.Level = 2
+    $kinjaFixturePlayer.Coin = $ChestFixtureCoin
+    $kinjaFixturePlayer.PlayerName = 'QA Baus'
+    $kinjaFixturePlayer | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $kinjaSeeds 'seed_player.json') -Encoding utf8NoBOM
+    $kinjaLabel = 'Kinja QA Baus'
+}
 if ($AccountProgressionFixture -ne 'None') {
     # Authorized synthetic seeds, only in the new build directory and package.
     # No runtime seeding/replenishment and no modification of normal assets.
