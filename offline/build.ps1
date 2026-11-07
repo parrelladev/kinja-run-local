@@ -2,7 +2,7 @@ param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')][string]$BuildId = 'v3',
     [ValidatePattern('^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$')][string]$PackageName = 'com.habby.kinjarun.offline.lab',
     [string]$NativeLibrary,
-    [ValidateSet('None','Migration','RewardBoundary')][string]$AccountProgressionFixture = 'None',
+    [ValidateSet('None','Migration','RewardBoundary','CombatBoundary')][string]$AccountProgressionFixture = 'None',
     [switch]$EquipBreakFixture,
     [switch]$HeroFixture,
     [int]$ChestFixtureCoin = -1,
@@ -34,6 +34,8 @@ if ($EquipBreakFixture -and ($AccountProgressionFixture -ne 'None' -or
 if ($AccountProgressionFixture -ne 'None') {
     $kinjaFixturePackage = if ($AccountProgressionFixture -eq 'Migration') {
         'com.habby.kinjarun.offline.qa.expmigration'
+    } elseif ($AccountProgressionFixture -eq 'CombatBoundary') {
+        'com.habby.kinjarun.offline.qa.expcombat'
     } else { 'com.habby.kinjarun.offline.qa.expreward' }
     if ($PackageName -ne $kinjaFixturePackage) {
         throw "Account EXP fixture requires isolated package $kinjaFixturePackage; existing player profiles are forbidden"

@@ -32,6 +32,7 @@
 #include <vector>
 #include "fusion_batch_plan.h"
 #include "account_progression.h"
+#include "combat_exp.h"
 #include "backup_regions.h"
 
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "KinjaOffline", __VA_ARGS__)
@@ -103,6 +104,8 @@ std::atomic<int64_t> run_gold_payout{0};
 std::atomic<int64_t> run_gold_credited{0};
 std::atomic<int64_t> run_diamond_payout{0};
 std::atomic<int64_t> run_diamond_credited{0};
+std::atomic<int64_t> run_exp_payout{0};
+std::atomic<int64_t> run_exp_credited{0};
 std::atomic<bool> run_success_confirmed{false};
 std::mutex run_item_mutex;
 std::vector<std::pair<int, int>> pending_run_items;
@@ -853,12 +856,13 @@ bool fight_won(int stage, Roots& roots, bool& passed) {
 bool read_original_item_count(Obj item_manager, Klass item_class, int item_id, int& count, Roots& roots);
 
 Obj make_end_response(int region, bool passed, bool new_score, bool first_win, bool new_chapter,
-                      int gold_reward, int diamond_reward,
+                      int gold_reward, int diamond_reward, int exp_reward,
                       const std::vector<std::pair<int, int>>& rewards,
                       const std::vector<EquipReward>& equipment_rewards, Roots& roots) {
     std::string json = load_seed("seed_end_game.json");
     if (json.empty() || !json_set_int(json, "RegionId", region) ||
         !json_set_int(json, "Gold", gold_reward) || !json_set_int(json, "Diamond", diamond_reward) ||
+        !json_set_int(json, "Exp", exp_reward) ||
         !json_set_bool(json, "IsPass", passed) || !json_set_bool(json, "IsNewScore", new_score) ||
         !json_set_bool(json, "IsNewStage", first_win) || !json_set_bool(json, "IsNewChapter", new_chapter)) {
         fail("Cannot prepare local end-game response JSON"); return nullptr;
@@ -3623,21 +3627,31 @@ bool settle_completed_run_currency(Roots& roots, const char* source) {
     const int64_t gold_credited = run_gold_credited.load();
     const int64_t diamond_total = run_diamond_payout.load();
     const int64_t diamond_credited = run_diamond_credited.load();
+    const int64_t exp_total = run_exp_payout.load();
+    const int64_t exp_credited = run_exp_credited.load();
     const int64_t gold_delta = gold_total - gold_credited;
     const int64_t diamond_delta = diamond_total - diamond_credited;
-    if (gold_delta <= 0 && diamond_delta <= 0) return true;
-    if (gold_delta < 0 || diamond_delta < 0 || gold_delta > INT32_MAX || diamond_delta > INT32_MAX ||
-        !grant_local_currency_reward(static_cast<int>(gold_delta), 0, roots, static_cast<int>(diamond_delta))) {
-        LOGE("Local run currency settlement failed source=%s gold=%lld/%lld diamonds=%lld/%lld",
+    int exp_delta = 0;
+    if (!kinja::combat_exp_to_credit(exp_total, exp_credited, exp_delta))
+        return fail("Invalid local combat EXP settlement totals");
+    if (gold_delta == 0 && diamond_delta == 0 && exp_delta == 0) return true;
+    if (gold_delta < 0 || diamond_delta < 0 || exp_delta < 0 || gold_delta > INT32_MAX ||
+        diamond_delta > INT32_MAX || exp_delta > INT32_MAX ||
+        !grant_local_currency_reward(static_cast<int>(gold_delta), static_cast<int>(exp_delta), roots,
+                                     static_cast<int>(diamond_delta))) {
+        LOGE("Local run reward settlement failed source=%s gold=%lld/%lld diamonds=%lld/%lld exp=%lld/%lld",
              source, static_cast<long long>(gold_total), static_cast<long long>(gold_credited),
-             static_cast<long long>(diamond_total), static_cast<long long>(diamond_credited));
+             static_cast<long long>(diamond_total), static_cast<long long>(diamond_credited),
+             static_cast<long long>(exp_total), static_cast<long long>(exp_credited));
         return false;
     }
     run_gold_credited.store(gold_total);
     run_diamond_credited.store(diamond_total);
-    LOGI("Local run currency settled source=%s gold=%lld delta=%lld diamonds=%lld delta=%lld",
+    run_exp_credited.store(exp_total);
+    LOGI("Local run reward settled source=%s gold=%lld delta=%lld diamonds=%lld delta=%lld exp=%lld delta=%lld",
          source, static_cast<long long>(gold_total), static_cast<long long>(gold_delta),
-         static_cast<long long>(diamond_total), static_cast<long long>(diamond_delta));
+         static_cast<long long>(diamond_total), static_cast<long long>(diamond_delta),
+         static_cast<long long>(exp_total), static_cast<long long>(exp_delta));
     return true;
 }
 
@@ -3685,6 +3699,8 @@ Obj enter_fight_hook(int32_t region_id, int32_t enemy_count, Method) {
     run_gold_credited.store(0);
     run_diamond_payout.store(0);
     run_diamond_credited.store(0);
+    run_exp_payout.store(0);
+    run_exp_credited.store(0);
     run_success_confirmed.store(false);
     {
         std::lock_guard<std::mutex> lock(run_item_mutex);
@@ -3871,43 +3887,54 @@ Obj kill_enemy_hook(int32_t enemy_id, int32_t enemy_instance_id, bool is_boss, b
     // The original G2C_KillEnemy carries the immediate gold payout. Offline
     // seed replies used zero, so the live battle coin counter could never grow.
     const int32_t gold = is_boss ? 50 : (is_elite ? 25 : 5);
+    const int32_t exp = kinja::combat_exp_for_kill(is_boss, is_elite);
     const int32_t diamonds = gold / 2; // Integer division floors each kill payout independently.
     Method set_gold = find_method(api.object_get_class(response), "set_Gold", {"System.Int32"}, true);
+    Method set_exp = find_method(api.object_get_class(response), "set_Exp", {"System.Int32"}, true);
     void* gold_args[] = {const_cast<int32_t*>(&gold)};
-    if (!set_gold || !invoke(set_gold, response, gold_args, "G2C_KillEnemy.set_Gold local payout")) {
-        status("fight_failed", last_error.empty() ? "Cannot set local kill gold payout" : last_error);
+    void* exp_args[] = {const_cast<int32_t*>(&exp)};
+    if (!set_gold || !set_exp ||
+        !invoke(set_gold, response, gold_args, "G2C_KillEnemy.set_Gold local payout") ||
+        !invoke(set_exp, response, exp_args, "G2C_KillEnemy.set_Exp local payout")) {
+        status("fight_failed", last_error.empty() ? "Cannot set local kill gold/EXP payout" : last_error);
         return nullptr;
     }
-    LOGI("Local kill payout enemy=%d gold=%d", enemy_id, gold);
+    LOGI("Local kill payout enemy=%d gold=%d exp=%d", enemy_id, gold, exp);
     const int64_t accumulated = run_gold_payout.fetch_add(gold) + gold;
     const int64_t accumulated_diamonds = run_diamond_payout.fetch_add(diamonds) + diamonds;
-    LOGI("Local run payout accumulated gold=%lld diamonds=%lld eventDiamonds=%d",
-         static_cast<long long>(accumulated), static_cast<long long>(accumulated_diamonds), diamonds);
+    const int64_t accumulated_exp = run_exp_payout.fetch_add(exp) + exp;
+    LOGI("Local run payout accumulated gold=%lld diamonds=%lld exp=%lld eventDiamonds=%d",
+         static_cast<long long>(accumulated), static_cast<long long>(accumulated_diamonds),
+         static_cast<long long>(accumulated_exp), diamonds);
     if (!collect_local_combat_drop(enemy_id, enemy_instance_id))
         LOGE("Configured item drop lookup failed for enemy=%d: %s", enemy_id, last_error.c_str());
     if (run_success_confirmed.load() && pending_end_response_handle && api.gchandle_get_target) {
         Obj end_response = api.gchandle_get_target(pending_end_response_handle);
         Klass response_class = find_class("ET", "G2C_EndGame");
         Method set_end_gold = response_class ? find_method(response_class, "set_Gold", {"System.Int32"}, true) : nullptr;
-        if (end_response && set_end_gold) {
+        Method set_end_exp = response_class ? find_method(response_class, "set_Exp", {"System.Int32"}, true) : nullptr;
+        if (end_response && set_end_gold && set_end_exp) {
             roots.retain(end_response);
             const int32_t final_gold = static_cast<int32_t>(std::min<int64_t>(accumulated, INT32_MAX));
             const int32_t final_diamonds = static_cast<int32_t>(std::min<int64_t>(accumulated_diamonds, INT32_MAX));
+            const int32_t final_exp = static_cast<int32_t>(std::min<int64_t>(accumulated_exp, INT32_MAX));
             void* end_gold_args[] = {const_cast<int32_t*>(&final_gold)};
+            void* end_exp_args[] = {const_cast<int32_t*>(&final_exp)};
             if (invoke(set_end_gold, end_response, end_gold_args, "G2C_EndGame.set_Gold include late kill")) {
                 Method set_end_diamond = find_method(response_class, "set_Diamond", {"System.Int32"}, true);
                 void* end_diamond_args[] = {const_cast<int32_t*>(&final_diamonds)};
                 if (set_end_diamond && invoke(set_end_diamond, end_response, end_diamond_args,
-                                              "G2C_EndGame.set_Diamond include late kill"))
-                    LOGI("Local EndGame response updated after late kill gold=%d diamonds=%d",
-                         final_gold, final_diamonds);
+                                              "G2C_EndGame.set_Diamond include late kill") &&
+                    invoke(set_end_exp, end_response, end_exp_args, "G2C_EndGame.set_Exp include late kill"))
+                    LOGI("Local EndGame response updated after late kill gold=%d diamonds=%d exp=%d",
+                         final_gold, final_diamonds, final_exp);
             }
         } else {
             LOGE("Could not update retained local EndGame response after late kill");
         }
     }
     if (run_success_confirmed.load() && !settle_completed_run_currency(roots, "late_kill_reply"))
-        status("fight_failed", last_error.empty() ? "Could not persist late local combat gold" : last_error);
+        status("fight_failed", last_error.empty() ? "Could not persist late local combat reward" : last_error);
     // Zero attack overrides preserve values already computed by the original caller.
     Obj task = complete_local_task(kill_task, response, false, roots);
     if (!task) status("fight_failed", last_error);
@@ -3933,26 +3960,28 @@ Obj end_game_hook(int32_t stage, int64_t score, int32_t bud_count, int32_t perfe
                              rewards, equipment_rewards)) {
         status("fight_failed", last_error); return nullptr;
     }
-    int gold_reward = 0, diamond_reward = 0;
+    int gold_reward = 0, diamond_reward = 0, exp_reward = 0;
     if (passed) {
         const int64_t accumulated = run_gold_payout.load();
         gold_reward = static_cast<int>(std::min<int64_t>(accumulated, INT32_MAX));
         const int64_t accumulated_diamonds = run_diamond_payout.load();
         diamond_reward = static_cast<int>(std::min<int64_t>(accumulated_diamonds, INT32_MAX));
+        const int64_t accumulated_exp = run_exp_payout.load();
+        exp_reward = static_cast<int>(std::min<int64_t>(accumulated_exp, INT32_MAX));
     }
     Obj response = make_end_response(region, passed, new_score, first_win, new_chapter,
-                                     gold_reward, diamond_reward, rewards, equipment_rewards, roots);
+                                     gold_reward, diamond_reward, exp_reward, rewards, equipment_rewards, roots);
     if (!response) { status("fight_failed", last_error); return nullptr; }
     if (pending_end_response_handle && api.gchandle_free) api.gchandle_free(pending_end_response_handle);
     pending_end_response_handle = passed ? api.gchandle_new(response, false) : 0;
     if (passed && !pending_end_response_handle)
         LOGE("Could not retain local EndGame response for late kill total update");
     if (!settle_completed_run_currency(roots, "end_game")) {
-        status("fight_failed", last_error.empty() ? "Could not persist local combat gold" : last_error);
+        status("fight_failed", last_error.empty() ? "Could not persist local combat reward" : last_error);
         return nullptr;
     }
-    LOGI("Local EndGame settlement passed=%d gold=%d diamonds=%d exp=0",
-         passed ? 1 : 0, gold_reward, diamond_reward);
+    LOGI("Local EndGame settlement passed=%d gold=%d diamonds=%d exp=%d",
+         passed ? 1 : 0, gold_reward, diamond_reward, exp_reward);
     if (!apply_local_reward_items(rewards, roots)) { status("fight_failed", last_error); return nullptr; }
     if (passed) {
         std::lock_guard<std::mutex> lock(run_item_mutex);

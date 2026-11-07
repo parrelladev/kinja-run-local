@@ -1,5 +1,9 @@
 # Auditoria funcional — build offline v31
 
+## EXP de combate — v150
+
+[Evidência e limites](docs/testing/COMBAT_EXP_V150.md). Regra offline autorizada de 5/25/50 EXP por comum/elite/boss; a fórmula remota original não foi recuperada. O bridge informa `KillEnemy.Exp`, usa `EndGame.Exp` como total da run e credita apenas o delta no saldo da conta após vitória. QA v149 no BlueStacks: Capítulo 1 vencido, 620 EXP, nível 2/1990 → nível 3/610, home e save persistentes após relançar. Testes isolados de taxa/delta/limites de nível passaram. Normal v150 gerada e assinada, **não instalada**; derrota e callback tardio não tiveram gameplay observado. Registros antigos abaixo que indicam EXP de combate zero são históricos.
+
 ## Baús v148
 
 [Resultado e limites](docs/testing/CHESTS_V148.md). Teste QA BlueStacks confirmou bronze a 10.000 moedas na tela e compra com saldo exato: débito único 10.000→0, gemas 0→0 e um equipamento. Sorteio Divino de 2% verificado pela configuração e enumeração determinística da categoria; faltam testes de gameplay de insuficiência, saldo acima, reinício e x10. APK normal assinado, não instalado. Registros antigos de 60 gemas para bronze e taxas divergentes são históricos.

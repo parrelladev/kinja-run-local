@@ -1,5 +1,9 @@
 # Guia de manutenção do Kinja Run offline
 
+## EXP de combate e nível da conta — v150
+
+[Regra, QA e limites](docs/testing/COMBAT_EXP_V150.md). A correção anterior já convertia EXP recebida em níveis, mas `KillEnemy` e `EndGame` offline devolviam EXP zero; jogar fases não movia a barra. Pela regra offline aprovada, comum/elite/boss dão 5/25/50 EXP, liquidada somente em vitória e somente pela diferença ainda não creditada. O cliente recebe o valor no campo original `KillEnemy.Exp`; `EndGame.Exp` mostra o total da run, sem um segundo crédito. QA v149: vitória no Capítulo 1 concedeu 620 EXP e elevou nível 2, 1990/2000 → nível 3, 610/3000, persistente após reinício. A fórmula do servidor original permanece desconhecida. Normal v150 assinada com seeds normais, **não instalada**. Derrota e callback tardio não foram observados em gameplay nesta rodada. As seções históricas abaixo que dizem “EXP de combate não implementada” descrevem builds anteriores.
+
 ## Baús v148 — normal assinada, não instalada
 
 [Contrato, probabilidades, QA e limites](docs/testing/CHESTS_V148.md). Diamante 115/x10 108: `EquipCfg.special=1` (Divino) recebe exatamente 2% por sorteio comum; demais qualidades preservam a proporção dos pesos originais nos 98%. Bronze 101 usa 10.000 moedas por compra Currency, sem gemas; rota de chave permanece. O cartão QA mostrou preço/ícone de moeda, e uma compra com saldo exato debitou 10.000→0, gemas 0→0 e entregou uma peça. As frases de garantia Épica sem implementação foram ocultadas. Saldo abaixo/acima, persistência pós-reinício e compra x10 em gameplay continuam pendentes porque o BlueStacks perdeu conexão ADB durante esses testes. Normal v148 compilada/assinada, não instalada. As seções de baús v63–v97 abaixo são históricas quanto a preço e distribuição.

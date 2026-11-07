@@ -180,9 +180,9 @@
     "nativeSha256": "9dc7db3af04f74ed56d69162ae10a9e5ab4dbf82446a327be072bfb3222f4103"
   },
   {
-    "buildId": "v144-qa-chests-exact",
-    "package": "com.habby.kinjarun.offline.qa.chests.exact",
-    "apkSha256": "2F6F5B4BFB270447C52BE26C3DCC2B5105CD6B8F2D7DECD1230B041154EC9CD2",
+    "buildId": "v142-qa-chest-economy",
+    "package": "com.habby.kinjarun.offline.qa.chests",
+    "apkSha256": "C4BE85960BF9EB5354FEF0BEAF1D623AB16A6101515FE19C9CA2B87717C937BD",
     "nativeSha256": "d9cb61fe9a2ff1dd228802173ba82eeced6bbd463e9f284525eb4cad270954fe"
   },
   {
@@ -192,21 +192,15 @@
     "nativeSha256": "d9cb61fe9a2ff1dd228802173ba82eeced6bbd463e9f284525eb4cad270954fe"
   },
   {
-    "buildId": "v148-chest-divine-two-percent-bronze-coins",
-    "package": "com.habby.kinjarun.offline.audit1",
-    "apkSha256": "7E35CF8CB520D95BD7863A1934A505BC8B7017BD62230F5A31A92A9F9B937FC7",
-    "nativeSha256": "3b825e7db0f636f2f711bac9e2931771fde119d2e2d88186bb67a1a76081637f"
+    "buildId": "v144-qa-chests-exact",
+    "package": "com.habby.kinjarun.offline.qa.chests.exact",
+    "apkSha256": "2F6F5B4BFB270447C52BE26C3DCC2B5105CD6B8F2D7DECD1230B041154EC9CD2",
+    "nativeSha256": "d9cb61fe9a2ff1dd228802173ba82eeced6bbd463e9f284525eb4cad270954fe"
   },
   {
     "buildId": "v145-qa-chests-above",
     "package": "com.habby.kinjarun.offline.qa.chests.above",
     "apkSha256": "2E991DB0E7459DC44D7B14C7CE6958CC08EEDAA264DBA52F7A0953258F5097E9",
-    "nativeSha256": "d9cb61fe9a2ff1dd228802173ba82eeced6bbd463e9f284525eb4cad270954fe"
-  },
-  {
-    "buildId": "v142-qa-chest-economy",
-    "package": "com.habby.kinjarun.offline.qa.chests",
-    "apkSha256": "C4BE85960BF9EB5354FEF0BEAF1D623AB16A6101515FE19C9CA2B87717C937BD",
     "nativeSha256": "d9cb61fe9a2ff1dd228802173ba82eeced6bbd463e9f284525eb4cad270954fe"
   },
   {
@@ -220,5 +214,23 @@
     "package": "com.habby.kinjarun.offline.qa.chests.exact",
     "apkSha256": "34D362F254293D0CCE4961598D1FEED81E114C7915D92D78385A1F7B987B2813",
     "nativeSha256": "3b825e7db0f636f2f711bac9e2931771fde119d2e2d88186bb67a1a76081637f"
+  },
+  {
+    "buildId": "v148-chest-divine-two-percent-bronze-coins",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "7E35CF8CB520D95BD7863A1934A505BC8B7017BD62230F5A31A92A9F9B937FC7",
+    "nativeSha256": "3b825e7db0f636f2f711bac9e2931771fde119d2e2d88186bb67a1a76081637f"
+  },
+  {
+    "buildId": "v150-combat-exp-account-level",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "6A0F32AA39A660BD51261BDDF894D34B8775AC290FC7D7A9E961BCF38BCFCD58",
+    "nativeSha256": "710b3244d7410f8457c5da8472bb41f1e53a6b0608795936ffc45960557d2ffe"
+  },
+  {
+    "buildId": "v149-qa-combat-exp-boundary",
+    "package": "com.habby.kinjarun.offline.qa.expcombat",
+    "apkSha256": "80CA6F49E4952E9AF5D1B10A70771DFB08BF602B25C5F3FFA2DA4F0750E140DF",
+    "nativeSha256": "710b3244d7410f8457c5da8472bb41f1e53a6b0608795936ffc45960557d2ffe"
   }
 ]
