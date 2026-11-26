@@ -33,3 +33,7 @@ No 1.9.1 os fragmentos vinham de ofertas pagas e eventos online, que não existe
 ## Teste sugerido (QA)
 
 Restaurar o save do usuário num package QA. Vencer uma fase e conferir `701001 +5` no resultado e no herói 1001 (receita de estrela). Reiniciar e conferir o saldo. Num perfil com o Capítulo 5 vencido, conferir que os fragmentos vão para o 4002 até 80, e que o botão Obter libera o herói.
+
+## Build normal v151
+
+Incluído em `v151-chapter-rewards-fragments-coins` (audit1, APK SHA-256 `944BB564…2F7958`). Compilado com NDK e assinado com o certificado de laboratório; **não instalado nem testado no jogo**. Ver `MAINTENANCE_GUIDE.md`, seção "Build normal v151". Os itens "Não validado" acima continuam pendentes, exceto compilação ARM64 e empacotamento/assinatura.

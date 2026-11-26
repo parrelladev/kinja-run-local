@@ -232,5 +232,11 @@
     "package": "com.habby.kinjarun.offline.qa.expcombat",
     "apkSha256": "80CA6F49E4952E9AF5D1B10A70771DFB08BF602B25C5F3FFA2DA4F0750E140DF",
     "nativeSha256": "710b3244d7410f8457c5da8472bb41f1e53a6b0608795936ffc45960557d2ffe"
+  },
+  {
+    "buildId": "v151-chapter-rewards-fragments-coins",
+    "package": "com.habby.kinjarun.offline.audit1",
+    "apkSha256": "944BB5644FEE1D797E8327E60802214C6F1DD7668E694DF9DE13408B022F7958",
+    "nativeSha256": "815d2268e9bd85f9029870bc4cca4bb5cf763e5fe04bc29d4844f0190c89461c"
   }
 ]

@@ -24,3 +24,7 @@ Supõe-se que `CoinCount` conta só as moedas do chão. Se ele também incluir o
 ## Validação
 
 `clang++ -fsyntax-only` do bridge não trouxe erros novos. **Não validado:** NDK/APK, tipo real de `CoinCount`, valores no HUD/resultado, saldo após reinício.
+
+## Build normal v151
+
+Incluído em `v151-chapter-rewards-fragments-coins` (audit1, APK SHA-256 `944BB564…2F7958`). Compilado com NDK e assinado com o certificado de laboratório; **não instalado nem testado no jogo**. Ver `MAINTENANCE_GUIDE.md`, seção "Build normal v151". Os itens "Não validado" acima continuam pendentes, exceto compilação ARM64 e empacotamento/assinatura.

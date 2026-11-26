@@ -1,5 +1,15 @@
 # Guia de manutenção do Kinja Run offline
 
+## Build normal v151 — compilada e assinada, não instalada nem testada
+
+`v151-chapter-rewards-fragments-coins` reúne as quatro mudanças abaixo: recompensas de capítulo, moedas do chão, fragmentos de herói e resgate diário grátis de 30000 ouro na Loja (`kShopDailyGold`; antes 4000). Package `com.habby.kinjarun.offline.audit1`, o mesmo da normal v150. Compilação sem defines QA (`build-native.ps1`) e seeds normais, idênticos byte a byte a `offline/assets`, sem fixtures. A assinatura usa o keystore de laboratório existente; o certificado SHA-256 `7508ca8d…a75b3f` é igual ao da v150.
+
+- APK `build/kinja-run-offline-lab-v151-chapter-rewards-fragments-coins.apk`, SHA-256 `944BB5644FEE1D797E8327E60802214C6F1DD7668E694DF9DE13408B022F7958`.
+- `libkinjaoffline.so` SHA-256 `815D2268E9BD85F9029870BC4CCA4BB5CF763E5FE04BC29D4844F0190C89461C`, idêntico ao que está dentro do APK.
+- Avisos: o NDK mostrou um aviso de parâmetro não usado (`equipment_rewards`, `offline_bridge.cpp:1360`). O apksigner mostrou os mesmos 69 avisos `META-INF … not protected by signature` da v150.
+- Testes de host: `BackupStoreTest` passou com 2136 verificações, 82 cenários e 41 pontos. `chapter_rewards_test.cpp` e `hero_fragments_test.cpp` **não foram executados** nesta máquina, porque não há compilador C++ de host. Eles só compilaram com o clang do NDK para ARM64 Android, sem avisos. A execução anterior com g++ está registrada nos documentos v151.
+- **Sem instalação, boot, gameplay ou QA.** O usuário decidiu testar a normal direto no celular, sem a etapa QA prevista em `CHAPTER_REWARDS_V151.md`. Seguem pendentes os itens "Não validado" de cada documento v151, além do resgate de 30000 no aparelho. A limpeza `clean-builds` ainda não foi executada, a pedido do usuário.
+
 ## Recompensas de capítulo (cristais azuis 40001) — código pronto, sem build
 
 [Causa, política, migração e limites](docs/testing/CHAPTER_REWARDS_V151.md). O bridge só pagava as recompensas fixas das regiões 2/3 (chave 100001, 40001 ×2, chave 100002). Os capítulos seguintes nunca pagavam `GameRegion.first_win_reward`/`progress_reward`. O save do usuário (capítulos 1–11 vencidos, 2 cristais no total) confirma isso. A correção lê as tabelas originais por IL2CPP, paga cada slot uma vez (ledger `chapter_rewards.json`, incluído no Backup) e migra saves antigos no boot, sem repetir o que já foi pago. Itens que não são `ItemId_Count` fixos ficam devidos, sem palpite. Validação: só testes de host (planejador, backup) e checagem de sintaxe. **Sem compilação ARM64, APK ou gameplay.** Os nomes `GameRegion`/`Reward` ainda precisam do log `Config schema` no aparelho.

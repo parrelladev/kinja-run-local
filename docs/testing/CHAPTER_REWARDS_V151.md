@@ -58,3 +58,7 @@ Arquivos: `offline/native/chapter_rewards.h` (planejador puro), `offline/native/
 3. Comparar 40001/chaves/gemas na home e em Talentos com os valores do log. Reiniciar e conferir que nada é pago duas vezes.
 4. Vencer a região 13 e conferir o resultado (`Chapter clear rewards region=13`), o inventário e o reinício.
 5. Somente depois disso, gerar a build normal e atualizar este documento com hashes e resultado.
+
+## Build normal v151
+
+Incluído em `v151-chapter-rewards-fragments-coins` (audit1, APK SHA-256 `944BB564…2F7958`). Compilado com NDK e assinado com o certificado de laboratório; **não instalado nem testado no jogo**. Ver `MAINTENANCE_GUIDE.md`, seção "Build normal v151". Os itens "Não validado" acima continuam pendentes, exceto compilação ARM64 e empacotamento/assinatura.
