@@ -108,6 +108,8 @@ public final class BackupStoreTest {
                 "{\"Version\":1,\"Claims\":[299]}","{\"Version\":1,\"Claims\":[99999900]}","{\"Version\":1}","{\"Version\":1,\"Claims\":[200],\"X\":1}"}){
             Map<String,byte[]> malformed=copy(incoming);malformed.put("chapter_rewards.json",bad.getBytes(StandardCharsets.UTF_8));rejects(()->BackupStore.encode(malformed),"chapter ledger schema "+bad);
         }
+        Map<String,byte[]> newDaily=copy(incoming);newDaily.put("shop_daily_claim.json","{\"Date\":20261126,\"Claimed\":true,\"Amount\":30000}".getBytes(StandardCharsets.UTF_8));BackupStore.validate(newDaily);
+        for(String bad:new String[]{"5000","29999","30001"}){Map<String,byte[]> daily=copy(incoming);daily.put("shop_daily_claim.json",("{\"Date\":20261126,\"Claimed\":true,\"Amount\":"+bad+"}").getBytes(StandardCharsets.UTF_8));rejects(()->BackupStore.encode(daily),"daily amount "+bad);}
         Map<String,byte[]> noLedger=copy(incoming);noLedger.remove("chapter_rewards.json");BackupStore.validate(noLedger);
         check(BackupStore.decode(BackupStore.encode(noLedger)).keySet().equals(noLedger.keySet()),"chapter ledger stays optional");
         Map<String,byte[]> missing=copy(incoming);missing.remove("seed_heroes.json");rejects(()->BackupStore.encode(missing),"missing required model");

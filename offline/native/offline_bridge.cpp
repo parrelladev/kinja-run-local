@@ -1947,6 +1947,12 @@ void finish_chest_purchase_journal() {
     unlink((root + "chest_equipment.before").c_str());
 }
 
+// Offline daily free Shop gold (OnClickAdCoin). Raised from 4000 to 30000 at
+// the user's request to ease early progression. Journals/ledgers written by
+// older builds keep their recorded 4000 amount.
+constexpr int kShopDailyGold = 30000;
+constexpr int kLegacyShopDailyGold = 4000;
+
 std::string daily_shop_claim_path() { return files_dir + "/offline_save/shop_daily_claim.json"; }
 std::string daily_shop_pending_path() { return files_dir + "/offline_save/shop_daily_claim_pending.json"; }
 
@@ -1958,16 +1964,18 @@ bool reconcile_shop_daily_claim(Roots& roots) {
         std::string player = load_seed("seed_player.json");
         if (pending.empty() || !json_read_int(pending, "Date", date) ||
             !json_read_int(pending, "Before", before) || !json_read_int(pending, "After", after) ||
-            !json_read_int(player, "Coin", saved_gold) || date <= 0 || before < 0 || after != before + 4000)
+            !json_read_int(player, "Coin", saved_gold) || date <= 0 || before < 0 ||
+            (after != before + kShopDailyGold && after != before + kLegacyShopDailyGold))
             return fail("Invalid pending Shop daily claim journal");
+        const int amount = static_cast<int>(after - before);
         if (saved_gold == before) {
-            if (!grant_local_currency_reward(4000, 0, roots))
+            if (!grant_local_currency_reward(amount, 0, roots))
                 return fail("Could not recover prepared Shop daily claim");
         } else if (saved_gold != after) {
             return fail("Pending Shop daily claim conflicts with saved gold; refusing duplicate grant");
         }
         const std::string claimed = "{\"Date\":" + std::to_string(date) +
-            ",\"Claimed\":true,\"Amount\":4000}\n";
+            ",\"Claimed\":true,\"Amount\":" + std::to_string(amount) + "}\n";
         if (!write_file(daily_shop_claim_path(), claimed) || unlink(pending_path.c_str()) != 0)
             return fail("Could not finalize Shop daily claim journal");
         LOGI("Recovered local Shop daily claim date=%lld gold=%lld->%lld",
@@ -2001,7 +2009,7 @@ bool perform_shop_daily_claim(Obj page, Roots& roots) {
     }
     std::string player = load_seed("seed_player.json");
     int64_t saved_gold = -1;
-    if (player.empty() || !json_read_int(player, "Coin", saved_gold) || saved_gold < 0 || saved_gold > INT32_MAX - 4000)
+    if (player.empty() || !json_read_int(player, "Coin", saved_gold) || saved_gold < 0 || saved_gold > INT32_MAX - kShopDailyGold)
         return fail("Cannot validate local gold before Shop daily claim");
     Klass item_class = find_class("", "ItemManager");
     Obj item_manager = item_class ? singleton(item_class, roots) : nullptr;
@@ -2011,15 +2019,15 @@ bool perform_shop_daily_claim(Obj page, Roots& roots) {
         return fail("Live and saved gold differ; refusing Shop daily claim");
     const std::string journal = "{\"Date\":" + std::to_string(today) +
         ",\"Before\":" + std::to_string(saved_gold) +
-        ",\"After\":" + std::to_string(saved_gold + 4000) + "}\n";
+        ",\"After\":" + std::to_string(saved_gold + kShopDailyGold) + "}\n";
     if (!write_file(daily_shop_pending_path(), journal)) return fail("Cannot persist Shop daily claim journal");
-    if (!grant_local_currency_reward(4000, 0, roots)) {
+    if (!grant_local_currency_reward(kShopDailyGold, 0, roots)) {
         unlink(daily_shop_pending_path().c_str());
         return false;
     }
     if (!reconcile_shop_daily_claim(roots)) return false;
     if (!set_shop_daily_claim_count(1, roots)) return false;
-    LOGI("Local Shop daily claim granted gold=4000 date=%d", today);
+    LOGI("Local Shop daily claim granted gold=%d date=%d", kShopDailyGold, today);
     (void)page;
     return true;
 }

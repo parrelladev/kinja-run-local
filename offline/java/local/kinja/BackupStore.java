@@ -289,7 +289,7 @@ final class BackupStore {
         for(Object entry:list(shop,"List")) { Map<String,Object> v=obj(entry); if(!chests.add(num(v,"ChestId",1,Integer.MAX_VALUE))) throw invalid(); for(String k:new String[]{"DayRemainNum","NextTime","TotalOpenTimes"})num(v,k,0,Long.MAX_VALUE); List<Object> ids=list(v,"GroupIds"), ns=list(v,"GroupNums"); ints(ids); ints(ns); if(ids.size()!=ns.size())throw invalid(); }
         if (!chests.containsAll(Arrays.asList(101L,108L,115L))) throw invalid();
         if (models.containsKey(FILES[8])) { Map<String,Object> v=models.get(FILES[8]); num(v,"LastClaim",1,Long.MAX_VALUE); num(v,"QuickReturnDay",0,Long.MAX_VALUE); num(v,"QuickReturnCount",0,3); }
-        if (models.containsKey(FILES[9])) { Map<String,Object> v=models.get(FILES[9]); num(v,"Date",20000101,99991231); if(!bool(v,"Claimed") || num(v,"Amount",4000,4000)!=4000)throw invalid(); }
+        if (models.containsKey(FILES[9])) { Map<String,Object> v=models.get(FILES[9]); num(v,"Date",20000101,99991231); long amount=num(v,"Amount",4000,30000); if(!bool(v,"Claimed") || (amount!=4000 && amount!=30000))throw invalid(); }
         if (models.containsKey(FILES[11])) {
             // Chapter first-win/milestone claims: RegionId*100+slot, slot 0..98, unique.
             Map<String,Object> v=models.get(FILES[11]); if(v.size()!=2 || num(v,"Version",1,1)!=1)throw invalid();
