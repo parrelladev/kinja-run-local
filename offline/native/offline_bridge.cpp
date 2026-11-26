@@ -34,6 +34,7 @@
 #include "account_progression.h"
 #include "combat_exp.h"
 #include "chapter_rewards.h"
+#include "hero_fragments.h"
 #include "backup_regions.h"
 #include "backup_items.h"
 
@@ -1347,6 +1348,9 @@ void plan_cleared_chapter_rewards(int region, const std::string& regions_before,
     last_error = saved_error;
 }
 
+// Offline hero-fragment source (defined after hero_offline.h). Never blocks a victory.
+void plan_victory_hero_fragments(std::vector<std::pair<int, int>>& rewards);
+
 bool persist_local_clear(int region, int64_t score, bool passed, bool& first_win, bool& new_score,
                          bool& milestone, bool& new_chapter,
                          std::vector<std::pair<int, int>>& rewards,
@@ -1372,6 +1376,7 @@ bool persist_local_clear(int region, int64_t score, bool passed, bool& first_win
     // once per slot (chapter_rewards.json). Never blocks a saved victory.
     ChapterClearRewards chapter;
     if (passed) plan_cleared_chapter_rewards(region, regions_before, first_win, rewards, chapter);
+    if (passed) plan_victory_hero_fragments(rewards);
     for (const auto& reward : rewards) {
         if (!json_add_item(items, "ItemsInfo", reward.first, reward.second, "ItemId", "Count"))
             return fail("Cannot update saved offline inventory");
@@ -4601,6 +4606,71 @@ bool log_offline_perk_statuses(Obj player_manager, Roots& roots) {
 // shipped FunctionCfg requirements. Rebuild only the progression-based,
 // offline-capable portion of that response from the local save.
 #include "hero_offline.h"
+
+// User-approved offline source for hero fragments (no offline source existed:
+// 1.9.1 delivered them through online offers/events). Each won run adds
+// kinja::kVictoryHeroFragments of HeroCfg.fragment_id for the hero chosen by
+// choose_fragment_hero. The fragments join the EndGame reward list, so they
+// are saved, shown on the original result screen and reconciled by
+// OnItemInit with the other victory items. Any read failure grants nothing.
+void plan_victory_hero_fragments(std::vector<std::pair<int, int>>& rewards) {
+    const std::string saved_error = last_error;
+    Roots roots;
+    auto skip = [&](const char* why) {
+        LOGE("Victory hero fragments skipped: %s %s", why, last_error.c_str());
+        last_error = saved_error;
+    };
+    std::vector<LocalHeroRecord> owned;
+    int selected = 0;
+    if (!read_saved_heroes(load_seed("seed_heroes.json"), owned, selected)) return skip("unreadable hero save");
+    bool menu_open = false;
+    if (!local_hero_function_open(menu_open, roots)) return skip("hero menu state unavailable");
+    Klass hc = find_class("", "HeroManager");
+    Obj hm = hc ? singleton(hc, roots) : nullptr;
+    Method cfg_get = hc ? find_method(hc, "GetHeroCfg", {"System.Int32"}) : nullptr;
+    Method star_get = hc ? find_method(hc, "GetHeroStarCfgOne", {"System.Int32", "System.Int32"}) : nullptr;
+    if (!hm || !cfg_get || !star_get) return skip("original HeroManager APIs unavailable");
+    // Shipped 1.9.1 HeroCfg: starter 1001 plus the two receivable heroes 4002/4003.
+    std::vector<int> ids{1001, 4002, 4003};
+    for (const auto& hero : owned)
+        if (std::find(ids.begin(), ids.end(), hero.id) == ids.end()) ids.push_back(hero.id);
+    std::vector<kinja::FragmentHeroCandidate> candidates;
+    for (int id : ids) {
+        kinja::FragmentHeroCandidate c;
+        c.hero_id = id;
+        int32_t key = id;
+        void* args[] = {&key};
+        Obj cfg = nullptr;
+        if (!invoke(cfg_get, hm, args, "HeroManager.GetHeroCfg victory fragments", &cfg) || !cfg) continue;
+        roots.retain(cfg);
+        int fragment = 0, receivable = 0;
+        if (!hero_cfg_int(cfg, "fragment_id", fragment) || fragment <= 0 || !chapter_reward_item_known(fragment)) continue;
+        c.fragment_id = fragment;
+        c.receivable = hero_cfg_int(cfg, "can_receive", receivable) && receivable == 1;
+        auto mine = std::find_if(owned.begin(), owned.end(), [id](const LocalHeroRecord& h) { return h.id == id; });
+        c.owned = mine != owned.end();
+        if (c.owned) {
+            int32_t next = mine->star + 1;
+            void* star_args[] = {&key, &next};
+            Obj next_cfg = nullptr;
+            c.star_capped = !invoke(star_get, hm, star_args, "Next hero star for victory fragments", &next_cfg) || !next_cfg;
+            if (next_cfg) roots.retain(next_cfg);
+        }
+        candidates.push_back(c);
+    }
+    const int index = kinja::choose_fragment_hero(candidates, selected, menu_open);
+    if (index < 0) return skip("no hero can use fragments");
+    const auto& target = candidates[static_cast<size_t>(index)];
+    auto existing = std::find_if(rewards.begin(), rewards.end(),
+        [&target](const auto& row) { return row.first == target.fragment_id; });
+    if (existing == rewards.end()) rewards.emplace_back(target.fragment_id, kinja::kVictoryHeroFragments);
+    else if (existing->second <= INT32_MAX - kinja::kVictoryHeroFragments) existing->second += kinja::kVictoryHeroFragments;
+    else return skip("reward overflow");
+    LOGI("Victory hero fragments hero=%d item=%d count=%d owned=%d menuOpen=%d selected=%d",
+         target.hero_id, target.fragment_id, kinja::kVictoryHeroFragments, target.owned ? 1 : 0,
+         menu_open ? 1 : 0, selected);
+    last_error = saved_error;
+}
 
 bool read_local_menu_progress(std::string& regions, bool& chapter1_passed, bool& chapter2_passed) {
     chapter1_passed = chapter2_passed = false;

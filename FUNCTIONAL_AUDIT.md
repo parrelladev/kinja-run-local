@@ -1,5 +1,9 @@
 # Auditoria funcional — build offline v31
 
+## Fragmentos de herói — sem fonte offline, regra local sem build
+
+[Relatório](docs/testing/HERO_FRAGMENTS_V151.md). Save real sem fragmentos 701001/704002/704003; nenhuma rota offline os gerava. Regra aprovada: 5 por vitória, com destino em `hero_fragments.h`. **Passou:** teste de host e sintaxe. **Não testado:** APK/gameplay/reinício.
+
 ## Recompensas de capítulo — falha confirmada, correção sem build
 
 [Relatório](docs/testing/CHAPTER_REWARDS_V151.md). Save real do usuário: regiões 2–12 vencidas, 40001 recebido ×2 (1 gasto em `ExtraTalentLevel`), chaves 100001/100002. Causa confirmada no código: recompensas de capítulo fixas só para as regiões 2/3. A correção lê `GameRegion`/`Reward` originais, usa um ledger por slot e migra o save no boot. **Passou:** planejador no host, `BackupStoreTest` (2133 verificações) e sintaxe do bridge. **Não testado:** NDK/APK/instalação/boot/tabelas reais/tela de resultado/reinício.
