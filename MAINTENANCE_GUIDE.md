@@ -4,6 +4,10 @@
 
 [Causa, política, migração e limites](docs/testing/CHAPTER_REWARDS_V151.md). O bridge só pagava as recompensas fixas das regiões 2/3 (chave 100001, 40001 ×2, chave 100002). Os capítulos seguintes nunca pagavam `GameRegion.first_win_reward`/`progress_reward`. O save do usuário (capítulos 1–11 vencidos, 2 cristais no total) confirma isso. A correção lê as tabelas originais por IL2CPP, paga cada slot uma vez (ledger `chapter_rewards.json`, incluído no Backup) e migra saves antigos no boot, sem repetir o que já foi pago. Itens que não são `ItemId_Count` fixos ficam devidos, sem palpite. Validação: só testes de host (planejador, backup) e checagem de sintaxe. **Sem compilação ARM64, APK ou gameplay.** Os nomes `GameRegion`/`Reward` ainda precisam do log `Config schema` no aparelho.
 
+## Moedas do chão — crédito na vitória, código pronto, sem build
+
+[Causa, hipótese e teste](docs/testing/GROUND_COINS_V151.md). Só o ouro de `KillEnemy` era creditado. Agora a diferença de `FightDataManager.CoinCount` (início → fim da run) entra no ouro da vitória, aparece no resultado e é creditada uma vez. Hipótese pendente de QA: `CoinCount` não inclui o ouro dos inimigos. Sem APK/gameplay.
+
 ## Fragmentos de herói — fonte offline aprovada, código pronto, sem build
 
 [Regra e limites](docs/testing/HERO_FRAGMENTS_V151.md). Não existia fonte offline de 701001/704002/704003 (no original vinham de ofertas e eventos online). Regra aprovada pelo usuário: 5 fragmentos por vitória. Depois do Capítulo 5, eles vão para o próximo herói a liberar (4002, depois 4003); antes disso, ou com todos liberados, vão para o herói selecionado. O ID vem de `HeroCfg.fragment_id`, e a entrega usa a lista de itens da vitória. Validação: teste de host e sintaxe; sem APK/gameplay.

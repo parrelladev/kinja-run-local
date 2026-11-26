@@ -113,6 +113,9 @@ std::atomic<int64_t> run_diamond_credited{0};
 std::atomic<int64_t> run_exp_payout{0};
 std::atomic<int64_t> run_exp_credited{0};
 std::atomic<bool> run_success_confirmed{false};
+// Coins picked up from the ground during the run (FightDataManager.CoinCount).
+std::atomic<int64_t> run_pickup_coin_baseline{-1};
+std::atomic<bool> run_pickup_coins_added{false};
 std::mutex run_item_mutex;
 std::vector<std::pair<int, int>> pending_run_items;
 std::unordered_set<int> seen_run_drop_instances;
@@ -4159,6 +4162,59 @@ std::string hangup_reward_json(int16_t reward_type, int error, const std::string
         std::to_string(day_start) + "}";
 }
 
+// Reads the original in-run coin counter FightDataManager.CoinCount by field
+// name/type through IL2CPP (no offsets). Supports int/long/float/ObscuredInt.
+bool read_fight_coin_count(int64_t& coins) {
+    const std::string saved_error = last_error;
+    Roots roots;
+    Klass data_class = find_class("", "FightDataManager");
+    Obj manager = data_class ? singleton(data_class, roots) : nullptr;
+    Field field = data_class ? api.class_get_field_from_name(data_class, "CoinCount") : nullptr;
+    if (!manager || !field) {
+        LOGE("FightDataManager.CoinCount unavailable for ground coins");
+        last_error = saved_error;
+        return false;
+    }
+    const std::string type = type_name(api.field_get_type(field));
+    bool ok = true;
+    if (type == "System.Int32") { int32_t v = 0; api.field_get_value(manager, field, &v); coins = v; }
+    else if (type == "System.Int64") { int64_t v = 0; api.field_get_value(manager, field, &v); coins = v; }
+    else if (type == "System.Single") { float v = 0; api.field_get_value(manager, field, &v); coins = std::isfinite(v) ? std::llround(v) : -1; }
+    else if (type == "System.Double") { double v = 0; api.field_get_value(manager, field, &v); coins = std::isfinite(v) ? std::llround(v) : -1; }
+    else if (type == "CodeStage.AntiCheat.ObscuredTypes.ObscuredInt") {
+        // Copy the struct value, then decrypt with the original method on that unboxed receiver.
+        alignas(16) unsigned char value[64] = {};
+        api.field_get_value(manager, field, value);
+        Klass obscured = find_class("CodeStage.AntiCheat.ObscuredTypes", "ObscuredInt");
+        Method decrypt = obscured ? find_method(obscured, "GetDecrypted", {}) : nullptr;
+        Obj plain = nullptr;
+        ok = decrypt && invoke(decrypt, value, nullptr, "ObscuredInt.GetDecrypted CoinCount", &plain) &&
+             plain && api.object_unbox(plain);
+        if (ok) coins = *static_cast<int32_t*>(api.object_unbox(plain));
+    } else ok = false;
+    last_error = saved_error;
+    if (!ok || coins < 0) { LOGE("Unsupported/invalid FightDataManager.CoinCount type=%s", type.c_str()); return false; }
+    return true;
+}
+
+// Ground coins collected in the run. The offline rule keeps the existing
+// contract for combat gold: credited once, only after a confirmed victory.
+int64_t victory_pickup_coins(int32_t bud_count) {
+    if (run_pickup_coins_added.exchange(true)) return 0;  // EndGame retry: never add twice
+    int64_t end = 0;
+    if (!read_fight_coin_count(end)) return 0;
+    const int64_t baseline = run_pickup_coin_baseline.load();
+    // If the counter was reset after EnterFight, the end value is the whole run.
+    const int64_t coins = (baseline >= 0 && end >= baseline) ? end - baseline : end;
+    const int64_t kill_gold = run_gold_payout.load();
+    LOGI("Ground coins counter start=%lld end=%lld credited=%lld killGold=%lld buds=%d",
+         static_cast<long long>(baseline), static_cast<long long>(end), static_cast<long long>(coins),
+         static_cast<long long>(kill_gold), bud_count);
+    if (coins <= 0) return 0;
+    if (coins > 1000000) { LOGE("Ground coin count %lld out of range; not credited", static_cast<long long>(coins)); return 0; }
+    return coins;
+}
+
 Obj enter_fight_hook(int32_t region_id, int32_t enemy_count, Method) {
     Roots roots;
     active_region.store(region_id);
@@ -4169,6 +4225,11 @@ Obj enter_fight_hook(int32_t region_id, int32_t enemy_count, Method) {
     run_exp_payout.store(0);
     run_exp_credited.store(0);
     run_success_confirmed.store(false);
+    run_pickup_coins_added.store(false);
+    {
+        int64_t coins = -1;
+        run_pickup_coin_baseline.store(read_fight_coin_count(coins) ? coins : -1);
+    }
     {
         std::lock_guard<std::mutex> lock(run_item_mutex);
         pending_run_items.clear();
@@ -4426,6 +4487,11 @@ Obj end_game_hook(int32_t stage, int64_t score, int32_t bud_count, int32_t perfe
     if (!persist_local_clear(region, score, passed, first_win, new_score, milestone, new_chapter,
                              rewards, equipment_rewards)) {
         status("fight_failed", last_error); return nullptr;
+    }
+    // Ground coins join the run gold before the response and the settlement.
+    if (passed) {
+        const int64_t pickups = victory_pickup_coins(bud_count);
+        if (pickups > 0) run_gold_payout.fetch_add(pickups);
     }
     int gold_reward = 0, diamond_reward = 0, exp_reward = 0;
     if (passed) {

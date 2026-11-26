@@ -1,5 +1,9 @@
 # Auditoria funcional — build offline v31
 
+## Moedas do chão — não creditadas, correção sem build
+
+[Relatório](docs/testing/GROUND_COINS_V151.md). Relato do usuário confirmado no código: nenhum crédito para moedas coletadas. A correção lê `FightDataManager.CoinCount` e credita em vitória. **Passou:** sintaxe. **Não testado:** APK/HUD/resultado/reinício e a hipótese de que o contador exclui o ouro dos inimigos.
+
 ## Fragmentos de herói — sem fonte offline, regra local sem build
 
 [Relatório](docs/testing/HERO_FRAGMENTS_V151.md). Save real sem fragmentos 701001/704002/704003; nenhuma rota offline os gerava. Regra aprovada: 5 por vitória, com destino em `hero_fragments.h`. **Passou:** teste de host e sintaxe. **Não testado:** APK/gameplay/reinício.
