@@ -28,6 +28,23 @@ Muitos relatórios antigos citam arquivos em `build/` (logs, capturas) que já f
 - Não tratar online, anúncios, compras, correio ou guilda como disponíveis sem uma substituição local documentada.
 - Trampolines copiam 16 bytes e retomam em `entry + 16`. Antes de reutilizar, confirmar que as instruções copiadas não usam endereçamento relativo ao PC.
 
+## Armadilhas conhecidas
+
+Erros que já custaram crash ou conclusão errada. Detalhes em [MAINTENANCE_LOG.md](docs/history/MAINTENANCE_LOG.md), na build indicada.
+
+- Não chamar `OpenBoxResp` na compra local de baú: os caches de pool são nulos offline (crashes v58–v62).
+- Não fazer hook em `TreasureBoxItem.UpdateItem` para trocar a configuração do cartão (SIGBUS na v86).
+- Ouro 101, gemas 102 e EXP 104 são campos de `PlayerDataManager`, não `PlayerItem`. `AddCoin`/`AddLocalItem` não mudam `GetOwnItemNum`; usar os setters e `SyncValueToShow` (v50/v51).
+- `KillEnemy` pode chegar depois de `EndGame`. Creditar só a diferença e manter o `G2C_EndGame` por GC handle para atualizar o resultado (v53/v54).
+- O seletor de fusão não desempata por UID: nunca identificar peça pela posição na tela. O `ProtocolManager.HandleEquipOneKeyCompound` legado não é o contrato ET (v102).
+- `TalentCostCfg.exp` não é requisito comprovado; não usá-lo para barrar compras (v56).
+- HangUp: `OnClickReceive` retorna cedo com `_items` vazia. Não culpar o toque (v41/v42).
+- Não varrer a UI recursivamente: crash na v70. Usar caminho exato com `Transform.Find`.
+- Os hooks `UISetting.DoOpen`/`DoClose` causaram crash UnityMain/Houdini e foram removidos na v141. Não reintroduzir.
+- Revive: não fechar só a UI com um `CloseTween` isolado; o herói pode ficar morto ou sem input.
+- Prólogos são comparados como bytes little-endian: a v93 foi recusada por ordem de bytes errada.
+- Toques ADB por coordenada já acionaram compras e melhorias sem querer (v72, v75). Conferir a tela antes de tocar.
+
 ## Mapa do repositório
 
 | Caminho | Conteúdo |
@@ -183,7 +200,7 @@ Configuração local: [docs/development/SETUP.md](docs/development/SETUP.md) (`c
 | `tests/backup` (`BackupStoreTest`) | Codec, validação e transação do backup | `./tests/backup/run.ps1 -OutputDirectory <pasta nova>` (usa o JDK do toolchain) |
 | `tests/chapter_rewards_test.cpp` | Planejador de recompensas de capítulo | `g++ -std=c++17 -Wall -Wextra tests/chapter_rewards_test.cpp && ./a.out` |
 | `tests/hero_fragments_test.cpp` | Destino dos fragmentos | idem |
-| `tests/combat_exp_test.cpp` | EXP de combate | idem |
+| `tests/combat_exp_test.cpp` | EXP de combate (inclui `account_progression.h`, sem fixture) | idem |
 | `tests/account_progression_test.cpp` | Conversão EXP → nível | `tests/run-account-progression.ps1 -Serial <adb>` (gera fixture da tabela e roda no emulador) |
 
 **Limite conhecido:** a máquina Windows de build não tem compilador C++ de host (nem g++, nem clang++, nem MSVC). Nela, os testes C++ só podem ser compilados com o clang do NDK, não executados. Registrar isso ao validar uma build. Os testes cobrem a lógica pura; o bridge em si (hooks, JSON dos saves) não tem teste de host.
@@ -210,7 +227,7 @@ Configuração local: [docs/development/SETUP.md](docs/development/SETUP.md) (`c
 
 Quando faltar informação, fazer uma pergunta curta e específica e continuar o que não depende dela.
 
-## Build normal v151 — compilada e assinada, não instalada nem testada
+## Build normal v151 — compilada e assinada; instalada pelo usuário (relato), sem QA por sistema
 
 `v151-chapter-rewards-fragments-coins` reúne recompensas de capítulo, moedas do chão, fragmentos de herói e resgate diário de 30.000 ouro. Package `audit1`, sem defines QA, seeds idênticos a `offline/assets`, sem fixtures; certificado igual ao da v150.
 
