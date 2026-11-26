@@ -36,7 +36,7 @@ for directory, dirs, names in os.walk(ROOT):
     for name in names:
         p = Path(directory) / name
         rel = p.relative_to(ROOT).as_posix()
-        if rel.startswith(('project-atlas/', 'build/', '.local/')) or rel in {'config/local.json','docs/planning/migration-manifest.json','docs/planning/planning-data.js'}:
+        if rel.startswith(('project-atlas/', 'build/', '.local/')) or rel in {'config/local.json','docs/history/migration/migration-manifest.json','docs/history/migration/planning-data.js'}:
             continue
         if p.suffix.lower() in {'.keystore', '.jks', '.p12', '.pem', '.key'} or any(word in p.name.lower() for word in ('password','credential','token')):
             excluded.append(rel + ' [assinatura: omitida]')

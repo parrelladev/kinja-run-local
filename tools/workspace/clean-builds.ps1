@@ -18,8 +18,8 @@ foreach ($name in @($apkName,$signatureName)) {
 if (Get-ChildItem -LiteralPath $buildRoot -Force -Recurse -Attributes ReparsePoint) {
     throw 'Build contains links; review targets before cleanup'
 }
-$historyPath = Join-Path $project 'docs/development/build-history.json'
-$history = if (Test-Path -LiteralPath $historyPath) { @(Get-Content -LiteralPath $historyPath -Raw | ConvertFrom-Json) } else { @() }
+. (Join-Path $PSScriptRoot 'build-history.ps1')
+$history = Read-KinjaBuildHistory -ProjectRoot $project
 $known = @{}
 foreach ($entry in $history) { $known[$entry.buildId] = $entry }
 foreach ($directory in Get-ChildItem -LiteralPath $buildRoot -Directory -Filter 'offline-bridge-*') {
@@ -56,7 +56,11 @@ foreach ($item in Get-ChildItem -LiteralPath $buildRoot -Force) {
 }
 $before = [int64](Get-ChildItem -LiteralPath $buildRoot -File -Recurse -Force | Measure-Object Length -Sum).Sum
 if ($PSCmdlet.ShouldProcess($buildRoot,"Keep $apkName and signature report; record build identities; remove $($targets.Count) generated entries")) {
-    @($known.Values | Sort-Object buildId) | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $historyPath -Encoding utf8NoBOM
+    # Keep the existing order (chronological) and append identities first seen in build/.
+    $ordered = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in $history) { $ordered.Add($known[$entry.buildId]) }
+    foreach ($id in ($known.Keys | Sort-Object)) { if (-not ($history | Where-Object { $_.buildId -eq $id })) { $ordered.Add($known[$id]) } }
+    Write-KinjaBuildHistory -ProjectRoot $project -Entries $ordered.ToArray()
     # All resolved targets and descendant links have been checked above. One shell end-to-end.
     foreach ($item in $targets) { Remove-Item -LiteralPath $item.FullName -Recurse -Force }
     if ((Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash -ne $retainedHash) { throw 'Retained APK verification failed' }

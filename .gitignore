@@ -31,7 +31,7 @@ __pycache__/
 /project-atlas/inventory.json
 
 /.local/
-/docs/planning/migration-manifest.json
+/docs/history/migration/migration-manifest.json
 /config/*.local.json
 .env
 .env.*

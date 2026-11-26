@@ -103,7 +103,7 @@ Em 03/11/2026, o usuário informou que conseguiu executar normalmente o APK v111
 
 Validação da migração em 03/11/2026: biblioteca AArch64 compilada e contrato Java/JNI/D8 aprovado na pasta nova; painel exercitado com referência externa e grafo. BuildId histórico v110 recusado antes de gerar saídas. Nenhum APK empacotado/instalado e nenhum gameplay ou BlueStacks validado nesta etapa. Detalhes em `docs/planning/migration-validation.json`.
 
-A implementação de trabalho está em `kinja-run-local`; o acervo antigo permanece externo. Consulte [setup](../../docs/development/SETUP.md), [resultado da migração](../../docs/planning/MIGRATION_REPORT.md) e [BlueStacks](../../docs/testing/BLUESTACKS.md). `config/local.json` resolve APK/toolchains/assinatura sem copiá-los. O Atlas declara referências externas/ausentes; contagens do painel anterior pertencem ao snapshot do acervo, não ao checkout leve. Scripts de análise históricos podem exigir seus inputs locais. Nenhuma lógica de gameplay ou save foi modificada. Validação de compilação/migração não é validação Android ou BlueStacks.
+A implementação de trabalho está em `kinja-run-local`; o acervo antigo permanece externo. Consulte [setup](../../docs/development/SETUP.md), [resultado da migração](migration/MIGRATION_REPORT.md) e [BlueStacks](../../docs/testing/BLUESTACKS.md). `config/local.json` resolve APK/toolchains/assinatura sem copiá-los. O Atlas declara referências externas/ausentes; contagens do painel anterior pertencem ao snapshot do acervo, não ao checkout leve. Scripts de análise históricos podem exigir seus inputs locais. Nenhuma lógica de gameplay ou save foi modificada. Validação de compilação/migração não é validação Android ou BlueStacks.
 
 
 ## Exploração visual do projeto — Project Atlas

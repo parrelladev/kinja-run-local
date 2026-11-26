@@ -55,8 +55,11 @@ $kinjaSignArgs += $kinjaSignInput
 & $kinjaJava @kinjaSignArgs
 if ($LASTEXITCODE -ne 0) { throw 'apksigner sign failed' }
 & $kinjaJava -jar $kinjaApksigner verify --verbose --print-certs $kinjaOutput 2>&1 |
-    Tee-Object -FilePath ($kinjaOutput + '.signature-verification.txt')
-if ($LASTEXITCODE -ne 0) { throw 'Signed APK signature verification failed' }
+    Tee-Object -Variable kinjaVerifyOutput
+$kinjaVerifyExit = $LASTEXITCODE
+# Write the report as UTF-8 on both Windows PowerShell 5.1 (Tee-Object would use UTF-16) and PowerShell 7.
+[IO.File]::WriteAllLines(($kinjaOutput + '.signature-verification.txt'), [string[]]@($kinjaVerifyOutput | ForEach-Object { $_.ToString() }), (New-Object System.Text.UTF8Encoding($false)))
+if ($kinjaVerifyExit -ne 0) { throw 'Signed APK signature verification failed' }
 & $kinjaZipalign -c -P 16 4 $kinjaOutput
 if ($LASTEXITCODE -ne 0) { throw 'Signed APK alignment verification failed' }
 Get-FileHash -LiteralPath $kinjaOutput -Algorithm SHA256

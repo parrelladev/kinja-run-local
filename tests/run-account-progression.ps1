@@ -6,7 +6,7 @@ $paths = Get-KinjaWorkspacePaths -ProjectRoot $project
 $output = Join-Path $project 'build/tests/account-progression'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 $table = Join-Path $paths.archiveRoot 'analysis/bundles/tables/clientdata.ht/150393219823674535_AccountLevelCfgCfgData.json'
-$rows = @(Get-Content -LiteralPath $table -Raw | ConvertFrom-Json | Sort-Object level)
+$rows = @((Get-Content -LiteralPath $table -Raw | ConvertFrom-Json) | Sort-Object level)
 if ($rows.Count -ne 200) { throw 'Expected recovered 1.9.1 table with 200 rows' }
 for ($i = 0; $i -lt $rows.Count; $i++) {
     if ($rows[$i].level -ne ($i + 1) -or $rows[$i].cost_exp -le 0) { throw 'Invalid recovered level table' }

@@ -1,6 +1,6 @@
 # Kinja Run offline recreation: initial findings
 
-> Historical snapshot: this file records the initial static-only investigation and predates the working offline JNI/IL2CPP bridge and Android runtime validations. For current architecture, build instructions, implemented hooks, evidence levels and open issues, read [`MAINTENANCE_GUIDE.md`](MAINTENANCE_GUIDE.md). Do not interpret the statements below that no code was executed as current status.
+> Historical snapshot: this file records the initial static-only investigation and predates the working offline JNI/IL2CPP bridge and Android runtime validations. For current architecture, build instructions, implemented hooks, evidence levels and open issues, read [`MAINTENANCE_GUIDE.md`](../../MAINTENANCE_GUIDE.md). Do not interpret the statements below that no code was executed as current status.
 
 ## Target
 
