@@ -1,6 +1,8 @@
 # Instruções para manutenção do Kinja Run offline
 
-Antes de investigar ou alterar este repositório, leia [`MAINTENANCE_GUIDE.md`](MAINTENANCE_GUIDE.md). Ele descreve a arquitetura, os pontos de entrada do APK original, o bridge offline, os saves, a progressão, os hooks e as limitações já observadas. Leia [`FUNCTIONAL_AUDIT.md`](FUNCTIONAL_AUDIT.md) para os defeitos confirmados na build de laboratório atual e os testes que ainda faltam.
+Antes de investigar ou alterar este repositório, leia [`MAINTENANCE_GUIDE.md`](MAINTENANCE_GUIDE.md) inteiro. Ele descreve o estado atual: arquitetura, regras, os hooks instalados, os saves, o estado e a validação de cada sistema, packages, build e testes. Para trabalhar num sistema, leia também o relatório em `docs/testing/` ou `analysis/native/` indicado na linha dele.
+
+O histórico por build fica em [`docs/history/`](docs/history/): o antigo guia (`MAINTENANCE_LOG.md`), a auditoria funcional (`FUNCTIONAL_AUDIT.md`) e o antigo README do bridge. Consulte-o só quando precisar da causa, da evidência ou do RVA de uma mudança antiga. Não acrescente seções datadas ao guia: edite a linha ou seção do sistema afetado e coloque o detalhe no relatório e no commit.
 
 Regras de trabalho:
 

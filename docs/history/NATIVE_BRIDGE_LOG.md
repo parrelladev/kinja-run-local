@@ -1,5 +1,7 @@
 # Original client offline bridge
 
+> **Registro histórico.** O estado atual está em [MAINTENANCE_GUIDE.md](../../MAINTENANCE_GUIDE.md). Este arquivo foi movido para `docs/history/` sem mudar o conteúdo (só os links relativos foram ajustados). Afirmações como "atual" ou "instalada" valem para a data de cada seção, e arquivos citados em `build/` podem já ter sido apagados.
+
 ## Fresh-profile readiness audit — v109 on audit1
 
 [Readiness audit](../../analysis/native/OFFLINE_READINESS_AUDIT.md). The user authorized testing natural progression in a separate profile. audit1 is a distinct package using normal seeds, no QA defines and the existing lab keystore; lab6/v107/save remain intact. The exact v107 library on a clean profile (v108) reproduced login stuck at67% because menu unlocks required an unreached region3 record. v109 adds `read_local_menu_progress`: an absent region3 with MaxRegion<3 means locked, while missing reached records or malformed existing records still fail. No save/progress/resource fabrication. ARM64 parser regression passed; audit1 updated with adb install -r and reached home level1/1500gold/0gems/0EXP/empty inventory. Gameplay/restart tests are ongoing; do not call progression validated. Main-profile cold start in airplane mode passed but RecoverPower NRE persists. v109 has not been promoted to lab6 yet.
@@ -26,7 +28,7 @@ See [1.9.1 collective contract investigation](../../analysis/native/ONEKEY_1_9_1
 
 ## Current equipment fusion — v102
 
-See [exact 1.9.1 findings, recipes and evidence](../../analysis/native/FUSION_1_9_1_V102.md) and [functional audit](../../FUNCTIONAL_AUDIT.md). The saved root quality was discarded by a second lookup overwriting the modified JSON record. Eligibility caches were also calculated before function102 was opened; the original update method returned early. The bridge now retains the changed record, rebuilds original caches after `SetOpeningFunc`, and validates the **current** `EquipQualityCfg.cost` recipe through managed APIs. Higher ranks require one material and may use same part/different ID or lower material quality; UID2=0 is the original UI contract for one material.
+See [exact 1.9.1 findings, recipes and evidence](../../analysis/native/FUSION_1_9_1_V102.md) and [functional audit](FUNCTIONAL_AUDIT.md). The saved root quality was discarded by a second lookup overwriting the modified JSON record. Eligibility caches were also calculated before function102 was opened; the original update method returned early. The bridge now retains the changed record, rebuilds original caches after `SetOpeningFunc`, and validates the **current** `EquipQualityCfg.cost` recipe through managed APIs. Higher ranks require one material and may use same part/different ID or lower material quality; UID2=0 is the original UI contract for one material.
 
 All models/UIDs/wear/parts/save-live values are validated before consumption. Journal/snapshots, inventory readback and rollback remain; original inventory callback precedes the original fusion-success callback so result UI sees the applied item. No currency is charged. Upgrades/chest purchases are refused during fusion reentry. Equipped materials remain refused pending their original gameplay contract. No direct managed-object offset writes are added. QA seeding was not enabled in these builds and no new items were created in the save.
 

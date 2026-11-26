@@ -42,6 +42,6 @@ Rede original observada: avião0/Wi-Fi0/dados1; rede padrão100 validada por Eth
 | Combate e persistência | Não testado | Recompensas + restart, recursos naturais |
 | Transações / fusão coletiva | Não testado | Plano específico sem consumir itens reais implicitamente |
 
-Os resultados do telefone continuam em `FUNCTIONAL_AUDIT.md` e nos relatórios existentes; não transferir status aprovado para o emulador. Validar prólogos/hash e manter chamadas IL2CPP na thread Unity. Se houver tradução ARM, confirmar o caminho executado em vez de supor equivalência por versão Android.
+Os resultados do telefone continuam em `docs/history/FUNCTIONAL_AUDIT.md` e nos relatórios existentes; não transferir status aprovado para o emulador. Validar prólogos/hash e manter chamadas IL2CPP na thread Unity. Se houver tradução ARM, confirmar o caminho executado em vez de supor equivalência por versão Android.
 
 Preferir perfil natural isolado `com.habby.kinjarun.offline.audit1`, sem flags QA, após confirmar ausência ou estado prévio desse package na instância. Preservar `lab6` e o mesmo keystore em atualizações. Cada execução futura deve registrar ambiente, APK/biblioteca, serial, baseline, ações, evidências e nível de validação. Logs/capturas novos vão a `build/tests/<id-unico>/`, ignorado pelo Git; sínteses revisadas vão a `docs/testing/`.

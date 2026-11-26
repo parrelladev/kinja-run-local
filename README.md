@@ -4,7 +4,7 @@ Workspace leve do adaptador offline para o cliente **Kinja Run Android 1.9.1 / U
 
 ## Começar
 
-1. Leia [MAINTENANCE_GUIDE.md](MAINTENANCE_GUIDE.md) e [FUNCTIONAL_AUDIT.md](FUNCTIONAL_AUDIT.md).
+1. Leia [MAINTENANCE_GUIDE.md](MAINTENANCE_GUIDE.md). O histórico por build está em [docs/history/](docs/history/).
 2. Siga o [setup local](docs/development/SETUP.md). Nesta máquina, `config/local.json` já aponta explicitamente para o acervo existente; ele não é versionado.
 3. Execute `python project-atlas/build_inventory.py` e abra [project-atlas/index.html](project-atlas/index.html) no navegador, ou execute `./project-atlas/open.ps1`.
 4. Consulte a [preparação de testes no BlueStacks](docs/testing/BLUESTACKS.md) antes de instalar qualquer APK.
