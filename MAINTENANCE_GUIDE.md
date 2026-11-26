@@ -7,6 +7,7 @@ Histórico, consultado só quando necessário:
 - [docs/history/MAINTENANCE_LOG.md](docs/history/MAINTENANCE_LOG.md): o guia anterior, um diário de v31 a v151 com causas, RVAs, retificações e evidências por build.
 - [docs/history/FUNCTIONAL_AUDIT.md](docs/history/FUNCTIONAL_AUDIT.md): auditoria funcional no aparelho, por build, com logs, capturas e saldos.
 - [docs/history/NATIVE_BRIDGE_LOG.md](docs/history/NATIVE_BRIDGE_LOG.md): o antigo README do bridge, em inglês, até v109.
+- [docs/history/REVERSE_ENGINEERING.md](docs/history/REVERSE_ENGINEERING.md) e [docs/history/migration/](docs/history/migration/): a investigação estática inicial e a migração para este checkout.
 - `docs/testing/*.md`: um relatório por sistema/build, com contrato, testes e limites. É a fonte primária de cada linha da tabela de sistemas abaixo.
 
 Muitos relatórios antigos citam arquivos em `build/` (logs, capturas) que já foram apagados pelas limpezas autorizadas. As sínteses continuam válidas; os arquivos brutos não existem mais.
@@ -14,7 +15,6 @@ Muitos relatórios antigos citam arquivos em `build/` (logs, capturas) que já f
 ## Objetivo e arquitetura
 
 - `offline/` empacota uma Activity JNI e uma biblioteca nativa sobre o APK Unity original. Combate, telas e assets são os do jogo; o bridge substitui as respostas que vinham do servidor por respostas e saves locais.
-- `index.html` é um protótipo independente para navegador. Não é o jogo e não compartilha saves.
 - APK-alvo: `kinja-run-1-9-1.apk`, SHA-256 `7953eb369ba9b8c814c4736dac4a7e3aa116a5583837f6f12d795ea70c20595e`, cliente IL2CPP ARM64. RVAs, prólogos e conclusões valem **só para essa versão**.
 - O código IL2CPP não é reescrito em disco. `offline_bridge.cpp` redireciona entradas de métodos em memória, depois de conferir os 16 bytes do prólogo. `offline/build.ps1` troca manifest/`level0` e adiciona DEX, biblioteca e seeds.
 
@@ -44,6 +44,7 @@ Erros que já custaram crash ou conclusão errada. Detalhes em [MAINTENANCE_LOG.
 - Revive: não fechar só a UI com um `CloseTween` isolado; o herói pode ficar morto ou sem input.
 - Prólogos são comparados como bytes little-endian: a v93 foi recusada por ordem de bytes errada.
 - Toques ADB por coordenada já acionaram compras e melhorias sem querer (v72, v75). Conferir a tela antes de tocar.
+- Scripts rodam no **Windows PowerShell 5.1** (não há PowerShell 7 aqui). Nele, `Get-Content … | ConvertFrom-Json | Sort-Object` passa o array inteiro como um objeto só: envolver em parênteses (`(… | ConvertFrom-Json) | …`). `-Encoding utf8NoBOM` não existe. `Tee-Object -FilePath` grava UTF-16. `.ps1` com acentos precisa de UTF-8 com BOM. `2>&1` em programa nativo transforma avisos em erro.
 
 ## Mapa do repositório
 
@@ -56,11 +57,10 @@ Erros que já custaram crash ou conclusão errada. Detalhes em [MAINTENANCE_LOG.
 | `offline/java/local/kinja/` | `OfflineActivity` (configura o bridge antes da Unity e cuida do backup/SAF), `BackupStore` e `BackupCatalog`. |
 | `offline/assets/seed_*.json` | Estado inicial de um perfil novo e modelos de resposta ET. |
 | `offline/build.ps1`, `offline/native/build-native.ps1` | Empacotamento/assinatura e compilação ARM64. Ver [offline/BUILDING.md](offline/BUILDING.md) para o contrato do wrapper. |
-| `tests/` | Testes de host e scripts de teste isolado. |
-| `tools/workspace/` | `paths.ps1` (resolve `config/local.json`) e `clean-builds.ps1`. |
-| `docs/development/` | [SETUP.md](docs/development/SETUP.md) e `build-history.json`. |
-| `docs/testing/` | Relatórios por sistema/build. |
-| `analysis/` | Dump IL2CPP, tabelas extraídas e relatórios nativos (fusão, OneKey, prontidão). É análise estática, não código-fonte original. |
+| `tests/` | Testes de host e o runner único `run-host-tests.ps1` ([tests/README.md](tests/README.md)). |
+| `tools/workspace/` | `new-normal-build.ps1` (build normal com conferências), `clean-builds.ps1`, `build-history.ps1`, `paths.ps1` e `check-doc-links.py`. Índice de todas as ferramentas: [tools/README.md](tools/README.md). |
+| `docs/` | Índice em [docs/README.md](docs/README.md): `development/` (setup, [RELEASE.md](docs/development/RELEASE.md), `build-history.json`), `testing/` (relatórios, [índice](docs/testing/README.md)), `decisions/`, `history/`. |
+| `analysis/` | Relatórios de análise estática ([índice](analysis/README.md)). As extrações grandes (dump, tabelas, `.so` de análise) ficam no acervo. |
 | `project-atlas/` | Painel local de exploração (somente leitura). Regenerar com `python project-atlas/build_inventory.py`. |
 | `build/` | Saídas geradas. Não editar; usar sempre um BuildId novo. |
 
@@ -179,31 +179,32 @@ Todos usam o keystore de laboratório (certificado SHA-256 `7508ca8d…a75b3f`).
 
 ## Build
 
-Configuração local: [docs/development/SETUP.md](docs/development/SETUP.md) (`config/local.json`: APK original, NDK, toolchain, keystore). Build normal, na raiz:
+Configuração da máquina: [docs/development/SETUP.md](docs/development/SETUP.md). Passo a passo da build normal: [docs/development/RELEASE.md](docs/development/RELEASE.md). Resumo:
 
 ```powershell
-./offline/native/build-native.ps1
-./offline/build.ps1 -BuildId <novo> -PackageName com.habby.kinjarun.offline.audit1 -NativeLibrary ./offline/build/arm64-v8a/libkinjaoffline.so -PackageApk
+./tools/workspace/new-normal-build.ps1 -BuildId <vNNN-descricao> -DryRun   # só conferências e testes
+./tools/workspace/new-normal-build.ps1 -BuildId <vNNN-descricao>           # gera, confere e registra
 ```
 
-- O BuildId precisa ser novo: o script recusa IDs presentes em `build-history.json` ou no acervo externo.
-- Opções QA de compilação (`-QaMaxProfile`, `-QaFusionRepeats`, `-QaHeroCombat`) e fixtures de `build.ps1` são só para packages QA. Uma build normal não usa nenhuma.
-- Depois de empacotar: conferir o certificado no relatório `.signature-verification.txt` (os 69 avisos `META-INF … not protected by signature` são esperados), calcular SHA-256 do APK e da `.so`, e acrescentar a entrada em `docs/development/build-history.json` manualmente (o script não grava).
-- Chamado do PowerShell 5.1 com `2>&1`, `build-native.ps1` pode acusar erro só por causa de avisos do compilador. Conferir o código de saída real.
-- A build não instala. Instalação: `adb install -r` no mesmo package, ou manual pelo usuário.
-- Depois que o usuário terminar os testes: `./tools/workspace/clean-builds.ps1 -KeepBuildId <build-normal-atual>` (use `-WhatIf` antes).
+- O script exige main limpa, usa o package da última build normal do histórico, recusa BuildId repetido, roda os testes, compila sem QA e empacota. Depois confere certificado, `.so` e seeds dentro do APK e acrescenta a entrada em `build-history.json`. Não instala, não commita e não faz push.
+- Opções QA de compilação (`-QaMaxProfile`, `-QaFusionRepeats`, `-QaHeroCombat`) e fixtures de `build.ps1` são só para packages QA, chamando `build-native.ps1` e `build.ps1` diretamente.
+- Avisos esperados: `unused parameter 'equipment_rewards'` e 69 linhas `META-INF … not protected by signature`.
+- Instalação: manual pelo usuário, ou `adb install -r` no mesmo package quando autorizado.
+- Depois que o usuário terminar os testes: `./tools/workspace/clean-builds.ps1 -KeepBuildId <build-normal-atual>` (`-WhatIf` antes). O APK precisa estar com o nome original.
 
 ## Testes de host
 
-| Teste | Cobre | Como rodar |
-|---|---|---|
-| `tests/backup` (`BackupStoreTest`) | Codec, validação e transação do backup | `./tests/backup/run.ps1 -OutputDirectory <pasta nova>` (usa o JDK do toolchain) |
-| `tests/chapter_rewards_test.cpp` | Planejador de recompensas de capítulo | `g++ -std=c++17 -Wall -Wextra tests/chapter_rewards_test.cpp && ./a.out` |
-| `tests/hero_fragments_test.cpp` | Destino dos fragmentos | idem |
-| `tests/combat_exp_test.cpp` | EXP de combate (inclui `account_progression.h`, sem fixture) | idem |
-| `tests/account_progression_test.cpp` | Conversão EXP → nível | `tests/run-account-progression.ps1 -Serial <adb>` (gera fixture da tabela e roda no emulador) |
+`./tests/run-host-tests.ps1` roda tudo e mostra PASSOU, FALHOU, COMPILADO ou IGNORADO por teste. Detalhes e como escrever um teste: [tests/README.md](tests/README.md).
 
-**Limite conhecido:** a máquina Windows de build não tem compilador C++ de host (nem g++, nem clang++, nem MSVC). Nela, os testes C++ só podem ser compilados com o clang do NDK, não executados. Registrar isso ao validar uma build. Os testes cobrem a lógica pura; o bridge em si (hooks, JSON dos saves) não tem teste de host.
+| Teste | Cobre |
+|---|---|
+| `tests/backup` (`BackupStoreTest`) | Codec, validação e transação do backup |
+| `tests/chapter_rewards_test.cpp` | Planejador de recompensas de capítulo |
+| `tests/hero_fragments_test.cpp` | Destino dos fragmentos |
+| `tests/combat_exp_test.cpp` | EXP de combate |
+| `tests/account_progression_test.cpp` | Conversão EXP → nível (fixture gerada da tabela do acervo) |
+
+**Limite conhecido:** esta máquina não tem compilador C++ de host e o usuário preferiu não instalar. Sem `-Serial`, os testes C++ ficam COMPILADOS (clang do NDK), não executados. Com `-Serial <BlueStacks>`, rodam no emulador sem instalar APK. Registrar o resultado real ao validar uma build. O bridge em si (hooks, JSON dos saves) não tem teste de host.
 
 ## Quando o usuário relatar um erro
 

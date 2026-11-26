@@ -31,7 +31,7 @@ O inventário cobre arquivos físicos fora das exclusões registradas no painel.
 
 Associação de arquivo/método a sistema por nome é **inferida**. Caminhos centrais e relações do catálogo são curados a partir da documentação indicada. Referências entre documentos e arquivos são apenas citações, não chamadas runtime. Métodos em metadata não são código-fonte e não comprovam disponibilidade offline. Hooks na fonte não comprovam que foram instalados/exercitados em determinada build.
 
-“Personalizado” identifica o código/seeds do adaptador. Não é detecção de diferenças contra o APK nem contra Git: esta pasta não tem repositório Git acessível. Não se atribui modificação a binários originais ou assets sem evidência. Os marcos são uma síntese; as fontes integrais preservam o histórico detalhado, inclusive hipóteses refutadas e builds intermediárias.
+“Personalizado” identifica o código/seeds do adaptador. Não é detecção de diferenças contra o APK nem contra o histórico Git. Não se atribui modificação a binários originais ou assets sem evidência. Os marcos são uma síntese; as fontes integrais preservam o histórico detalhado, inclusive hipóteses refutadas e builds intermediárias.
 
 Não há cobertura semântica integral de todos os tipos/assets do APK, nem grafo completo de chamadas IL2CPP. O painel explicita desconhecidos e permite pesquisar todo o índice já recuperado. Não foi repetida engenharia reversa para preencher lacunas. O protótipo de navegador citado em documentação histórica não está presente como `index.html` na raiz atual e não foi fabricado.
 

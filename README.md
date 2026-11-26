@@ -1,32 +1,34 @@
-# Kinja Run local
+# Kinja Run offline
 
-Workspace leve do adaptador offline para o cliente **Kinja Run Android 1.9.1 / Unity IL2CPP ARM64**. Fonte, scripts e conhecimento técnico ficam aqui; APKs, toolchains, chaves e builds históricos ficam no acervo local, fora do Git.
+Adaptador que faz o cliente original **Kinja Run Android 1.9.1** (Unity IL2CPP ARM64) funcionar sem servidor. O APK original não é reescrito: uma Activity JNI e uma biblioteca nativa são acrescentadas a ele e, em tempo de execução, redirecionam as chamadas ao backend para respostas e saves locais. Combate, telas e assets continuam sendo os do jogo.
+
+Este repositório guarda fonte, scripts e conhecimento técnico. APK original, toolchains, keystore e builds antigas ficam num acervo local fora do Git, apontado por `config/local.json`.
 
 ## Começar
 
-1. Leia [MAINTENANCE_GUIDE.md](MAINTENANCE_GUIDE.md). O histórico por build está em [docs/history/](docs/history/).
-2. Siga o [setup local](docs/development/SETUP.md). Nesta máquina, `config/local.json` já aponta explicitamente para o acervo existente; ele não é versionado.
-3. Execute `python project-atlas/build_inventory.py` e abra [project-atlas/index.html](project-atlas/index.html) no navegador, ou execute `./project-atlas/open.ps1`.
-4. Consulte a [preparação de testes no BlueStacks](docs/testing/BLUESTACKS.md) antes de instalar qualquer APK.
+1. Leia o [guia de manutenção](MAINTENANCE_GUIDE.md): estado atual, regras, hooks, saves e sistemas.
+2. Configure a máquina: [docs/development/SETUP.md](docs/development/SETUP.md).
+3. Para gerar uma build para o celular: [docs/development/RELEASE.md](docs/development/RELEASE.md).
+4. Para rodar os testes: [tests/README.md](tests/README.md).
 
-## Onde trabalhar
+Agentes de IA seguem também o [AGENTS.md](AGENTS.md).
 
-| Área | Conteúdo |
+## Estrutura
+
+| Pasta | Conteúdo |
 |---|---|
-| `offline/native/` | Bridge JNI/IL2CPP e planejador de fusão |
-| `offline/java/` | Activity wrapper |
-| `offline/assets/` | Seeds iniciais; não são o save privado do jogador |
-| `tools/` | Scripts próprios de preparação e análise; binários/terceiros não incluídos |
-| `analysis/` | Relatórios preservados; extrações e índices grandes são dependências locais opcionais |
-| `project-atlas/` | Painel visual, catálogo e gerador |
-| `docs/` | Setup, testes, decisões e rastreabilidade da migração |
-| `config/` | Exemplo versionado; configuração pessoal ignorada |
-| `build/`, `offline/build/` | Novas saídas geradas localmente e ignoradas |
+| `offline/native/` | Bridge JNI/IL2CPP (`offline_bridge.cpp`) e lógica separada em headers |
+| `offline/java/` | Activity wrapper e backup manual (Java) |
+| `offline/assets/` | Seeds de um perfil novo; não são o save do jogador |
+| `offline/build.ps1` | Empacotamento e assinatura ([contrato do wrapper](offline/BUILDING.md)) |
+| `tests/` | Testes de host e runner único |
+| `tools/` | Scripts de build, workspace e análise ([índice](tools/README.md)) |
+| `docs/` | Setup, build, relatórios por sistema, decisões e histórico ([índice](docs/README.md)) |
+| `analysis/` | Relatórios de análise estática do APK ([índice](analysis/README.md)) |
+| `project-atlas/` | Painel visual de exploração (`./project-atlas/open.ps1`) |
+| `config/` | `local.example.json`; o `local.json` pessoal não é versionado |
+| `build/`, `offline/build/` | Saídas geradas, ignoradas pelo Git |
 
-## Estado e rastreabilidade
+## Limites
 
-- [Resultado da migração](docs/planning/MIGRATION_REPORT.md) e [decisão de organização](docs/decisions/0001-light-workspace.md).
-- [Plano visual](docs/planning/organization.html): resumo do acervo e arquivos selecionados, sem duplicar os 90 GB de builds.
-- [Checkpoint mais recente](analysis/native/OFFLINE_READINESS_AUDIT.md): lab6/v107, v110 assinada não instalada e audit1/v111. Preservar os limites de validação registrados.
-
-Migração não altera gameplay, prólogos, hooks ou saves. Compilação/validação de wrapper não comprovam instalação ou gameplay no BlueStacks. Não há APK original, keystore, senha, toolchain ou save privado neste repositório. Não foi definido licenciamento novo para materiais cuja titularidade não foi estabelecida.
+Funções que dependem de servidor (correio, guilda, compras reais, anúncios reais) não existem offline; algumas foram substituídas por regras locais documentadas no guia. Compilar não valida instalação nem jogo: cada sistema tem o nível de evidência registrado no guia. Não há licenciamento definido para materiais cuja titularidade não foi estabelecida.

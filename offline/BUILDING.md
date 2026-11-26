@@ -21,14 +21,14 @@ O DEX preparado/validado está em `build/offline-wrapper-setup/dex/classes.dex`,
 Na raiz do projeto, com o bridge já compilado pelo agente responsável:
 
 ```powershell
-./offline/build.ps1 -BuildId v3 -NativeLibrary offline/build/arm64-v8a/libkinjaoffline.so -PackageApk
+./offline/build.ps1 -BuildId <novo> -PackageName com.habby.kinjarun.offline.audit1 -NativeLibrary offline/build/arm64-v8a/libkinjaoffline.so -PackageApk
 ```
 
-O comando gera `build/kinja-run-offline-lab-v3.unsigned.apk` e `build/kinja-run-offline-lab-v3.apk`. Para uma nova execução, selecione um `BuildId` novo; os arquivos existentes não são sobrescritos. Sem `-NativeLibrary`, o script compila `native/offline_bridge.cpp` com Clang NDKr27d para ARM64/API23 e libc++ estática.
+O comando gera `build/kinja-run-offline-lab-<BuildId>.unsigned.apk` e `build/kinja-run-offline-lab-<BuildId>.apk`. Para uma nova execução, selecione um `BuildId` novo; os arquivos existentes não são sobrescritos. Sem `-NativeLibrary`, o script compila `native/offline_bridge.cpp` com Clang NDKr27d para ARM64/API23 e libc++ estática.
 
 Sem `-PackageApk`, o script prepara a biblioteca, o DEX, as substituições de manifest/resources/level0 e o plano em `build/offline-bridge-<BuildId>/build-plan.json`, sem gerar APK. Uma preparação também ocupa seu BuildId; escolha um ID novo na execução posterior que empacotar.
 
-O script verifica os exports JNI e a arquitetura da biblioteca, valida os nove seeds obrigatórios e todos os demais `seed_*.json` disponíveis, compila/valida o wrapper, aplica o manifest MAIN `local.kinja.OfflineActivity`, conserva o namespace de recursos corrigido em v2 e conserva o byte de update check desabilitado em level0. Depois acrescenta:
+O script verifica os exports JNI e a arquitetura da biblioteca, valida os seeds obrigatórios (lista `$kinjaRequiredSeeds` no script) e todos os demais `seed_*.json` disponíveis, compila/valida o wrapper, aplica o manifest MAIN `local.kinja.OfflineActivity`, conserva o namespace de recursos corrigido em v2 e conserva o byte de update check desabilitado em level0. Depois acrescenta:
 
 - `classes6.dex`.
 - `lib/arm64-v8a/libkinjaoffline.so`.
@@ -36,7 +36,7 @@ O script verifica os exports JNI e a arquitetura da biblioteca, valida os nove s
 
 O repacker exige o hash do APK original, aceita `--replace` para membros existentes e `--add` para membros novos, recusa colisões, preserva payloads originais e verifica hashes/CRC do resultado. Os membros novos usam timestamp do manifest original e ordem determinística. O alinhamento é aplicado por padding ZIP antes da assinatura e conferido pelo zipalign oficial; o modo de escrita nativo do zipalign apresentou access violation neste host.
 
-A assinatura usa `build/offline-lab.jks` e o arquivo de senha local já existente, sem exibir a senha. V1/v2/v3 e alinhamento são verificados após a assinatura. O script não instala nem executa o APK. A instalação posterior pelo coordenador pode usar `adb install -r` para conservar os dados do mesmo package/certificado de laboratório.
+A assinatura usa o keystore e o arquivo de senha configurados em `config/local.json` (alias `offline`), sem exibir a senha. V1/v2/v3 e alinhamento são verificados após a assinatura. O script não instala nem executa o APK. A instalação posterior pelo coordenador pode usar `adb install -r` para conservar os dados do mesmo package/certificado de laboratório.
 
 ## Validações já realizadas nesta etapa
 
