@@ -34,6 +34,7 @@
 #include "account_progression.h"
 #include "combat_exp.h"
 #include "chapter_rewards.h"
+#include "hero_fragments.h"
 #include "backup_regions.h"
 #include "backup_items.h"
 
@@ -112,6 +113,9 @@ std::atomic<int64_t> run_diamond_credited{0};
 std::atomic<int64_t> run_exp_payout{0};
 std::atomic<int64_t> run_exp_credited{0};
 std::atomic<bool> run_success_confirmed{false};
+// Coins picked up from the ground during the run (FightDataManager.CoinCount).
+std::atomic<int64_t> run_pickup_coin_baseline{-1};
+std::atomic<bool> run_pickup_coins_added{false};
 std::mutex run_item_mutex;
 std::vector<std::pair<int, int>> pending_run_items;
 std::unordered_set<int> seen_run_drop_instances;
@@ -1347,6 +1351,9 @@ void plan_cleared_chapter_rewards(int region, const std::string& regions_before,
     last_error = saved_error;
 }
 
+// Offline hero-fragment source (defined after hero_offline.h). Never blocks a victory.
+void plan_victory_hero_fragments(std::vector<std::pair<int, int>>& rewards);
+
 bool persist_local_clear(int region, int64_t score, bool passed, bool& first_win, bool& new_score,
                          bool& milestone, bool& new_chapter,
                          std::vector<std::pair<int, int>>& rewards,
@@ -1372,6 +1379,7 @@ bool persist_local_clear(int region, int64_t score, bool passed, bool& first_win
     // once per slot (chapter_rewards.json). Never blocks a saved victory.
     ChapterClearRewards chapter;
     if (passed) plan_cleared_chapter_rewards(region, regions_before, first_win, rewards, chapter);
+    if (passed) plan_victory_hero_fragments(rewards);
     for (const auto& reward : rewards) {
         if (!json_add_item(items, "ItemsInfo", reward.first, reward.second, "ItemId", "Count"))
             return fail("Cannot update saved offline inventory");
@@ -1939,6 +1947,12 @@ void finish_chest_purchase_journal() {
     unlink((root + "chest_equipment.before").c_str());
 }
 
+// Offline daily free Shop gold (OnClickAdCoin). Raised from 4000 to 30000 at
+// the user's request to ease early progression. Journals/ledgers written by
+// older builds keep their recorded 4000 amount.
+constexpr int kShopDailyGold = 30000;
+constexpr int kLegacyShopDailyGold = 4000;
+
 std::string daily_shop_claim_path() { return files_dir + "/offline_save/shop_daily_claim.json"; }
 std::string daily_shop_pending_path() { return files_dir + "/offline_save/shop_daily_claim_pending.json"; }
 
@@ -1950,16 +1964,18 @@ bool reconcile_shop_daily_claim(Roots& roots) {
         std::string player = load_seed("seed_player.json");
         if (pending.empty() || !json_read_int(pending, "Date", date) ||
             !json_read_int(pending, "Before", before) || !json_read_int(pending, "After", after) ||
-            !json_read_int(player, "Coin", saved_gold) || date <= 0 || before < 0 || after != before + 4000)
+            !json_read_int(player, "Coin", saved_gold) || date <= 0 || before < 0 ||
+            (after != before + kShopDailyGold && after != before + kLegacyShopDailyGold))
             return fail("Invalid pending Shop daily claim journal");
+        const int amount = static_cast<int>(after - before);
         if (saved_gold == before) {
-            if (!grant_local_currency_reward(4000, 0, roots))
+            if (!grant_local_currency_reward(amount, 0, roots))
                 return fail("Could not recover prepared Shop daily claim");
         } else if (saved_gold != after) {
             return fail("Pending Shop daily claim conflicts with saved gold; refusing duplicate grant");
         }
         const std::string claimed = "{\"Date\":" + std::to_string(date) +
-            ",\"Claimed\":true,\"Amount\":4000}\n";
+            ",\"Claimed\":true,\"Amount\":" + std::to_string(amount) + "}\n";
         if (!write_file(daily_shop_claim_path(), claimed) || unlink(pending_path.c_str()) != 0)
             return fail("Could not finalize Shop daily claim journal");
         LOGI("Recovered local Shop daily claim date=%lld gold=%lld->%lld",
@@ -1993,7 +2009,7 @@ bool perform_shop_daily_claim(Obj page, Roots& roots) {
     }
     std::string player = load_seed("seed_player.json");
     int64_t saved_gold = -1;
-    if (player.empty() || !json_read_int(player, "Coin", saved_gold) || saved_gold < 0 || saved_gold > INT32_MAX - 4000)
+    if (player.empty() || !json_read_int(player, "Coin", saved_gold) || saved_gold < 0 || saved_gold > INT32_MAX - kShopDailyGold)
         return fail("Cannot validate local gold before Shop daily claim");
     Klass item_class = find_class("", "ItemManager");
     Obj item_manager = item_class ? singleton(item_class, roots) : nullptr;
@@ -2003,15 +2019,15 @@ bool perform_shop_daily_claim(Obj page, Roots& roots) {
         return fail("Live and saved gold differ; refusing Shop daily claim");
     const std::string journal = "{\"Date\":" + std::to_string(today) +
         ",\"Before\":" + std::to_string(saved_gold) +
-        ",\"After\":" + std::to_string(saved_gold + 4000) + "}\n";
+        ",\"After\":" + std::to_string(saved_gold + kShopDailyGold) + "}\n";
     if (!write_file(daily_shop_pending_path(), journal)) return fail("Cannot persist Shop daily claim journal");
-    if (!grant_local_currency_reward(4000, 0, roots)) {
+    if (!grant_local_currency_reward(kShopDailyGold, 0, roots)) {
         unlink(daily_shop_pending_path().c_str());
         return false;
     }
     if (!reconcile_shop_daily_claim(roots)) return false;
     if (!set_shop_daily_claim_count(1, roots)) return false;
-    LOGI("Local Shop daily claim granted gold=4000 date=%d", today);
+    LOGI("Local Shop daily claim granted gold=%d date=%d", kShopDailyGold, today);
     (void)page;
     return true;
 }
@@ -4154,6 +4170,59 @@ std::string hangup_reward_json(int16_t reward_type, int error, const std::string
         std::to_string(day_start) + "}";
 }
 
+// Reads the original in-run coin counter FightDataManager.CoinCount by field
+// name/type through IL2CPP (no offsets). Supports int/long/float/ObscuredInt.
+bool read_fight_coin_count(int64_t& coins) {
+    const std::string saved_error = last_error;
+    Roots roots;
+    Klass data_class = find_class("", "FightDataManager");
+    Obj manager = data_class ? singleton(data_class, roots) : nullptr;
+    Field field = data_class ? api.class_get_field_from_name(data_class, "CoinCount") : nullptr;
+    if (!manager || !field) {
+        LOGE("FightDataManager.CoinCount unavailable for ground coins");
+        last_error = saved_error;
+        return false;
+    }
+    const std::string type = type_name(api.field_get_type(field));
+    bool ok = true;
+    if (type == "System.Int32") { int32_t v = 0; api.field_get_value(manager, field, &v); coins = v; }
+    else if (type == "System.Int64") { int64_t v = 0; api.field_get_value(manager, field, &v); coins = v; }
+    else if (type == "System.Single") { float v = 0; api.field_get_value(manager, field, &v); coins = std::isfinite(v) ? std::llround(v) : -1; }
+    else if (type == "System.Double") { double v = 0; api.field_get_value(manager, field, &v); coins = std::isfinite(v) ? std::llround(v) : -1; }
+    else if (type == "CodeStage.AntiCheat.ObscuredTypes.ObscuredInt") {
+        // Copy the struct value, then decrypt with the original method on that unboxed receiver.
+        alignas(16) unsigned char value[64] = {};
+        api.field_get_value(manager, field, value);
+        Klass obscured = find_class("CodeStage.AntiCheat.ObscuredTypes", "ObscuredInt");
+        Method decrypt = obscured ? find_method(obscured, "GetDecrypted", {}) : nullptr;
+        Obj plain = nullptr;
+        ok = decrypt && invoke(decrypt, value, nullptr, "ObscuredInt.GetDecrypted CoinCount", &plain) &&
+             plain && api.object_unbox(plain);
+        if (ok) coins = *static_cast<int32_t*>(api.object_unbox(plain));
+    } else ok = false;
+    last_error = saved_error;
+    if (!ok || coins < 0) { LOGE("Unsupported/invalid FightDataManager.CoinCount type=%s", type.c_str()); return false; }
+    return true;
+}
+
+// Ground coins collected in the run. The offline rule keeps the existing
+// contract for combat gold: credited once, only after a confirmed victory.
+int64_t victory_pickup_coins(int32_t bud_count) {
+    if (run_pickup_coins_added.exchange(true)) return 0;  // EndGame retry: never add twice
+    int64_t end = 0;
+    if (!read_fight_coin_count(end)) return 0;
+    const int64_t baseline = run_pickup_coin_baseline.load();
+    // If the counter was reset after EnterFight, the end value is the whole run.
+    const int64_t coins = (baseline >= 0 && end >= baseline) ? end - baseline : end;
+    const int64_t kill_gold = run_gold_payout.load();
+    LOGI("Ground coins counter start=%lld end=%lld credited=%lld killGold=%lld buds=%d",
+         static_cast<long long>(baseline), static_cast<long long>(end), static_cast<long long>(coins),
+         static_cast<long long>(kill_gold), bud_count);
+    if (coins <= 0) return 0;
+    if (coins > 1000000) { LOGE("Ground coin count %lld out of range; not credited", static_cast<long long>(coins)); return 0; }
+    return coins;
+}
+
 Obj enter_fight_hook(int32_t region_id, int32_t enemy_count, Method) {
     Roots roots;
     active_region.store(region_id);
@@ -4164,6 +4233,11 @@ Obj enter_fight_hook(int32_t region_id, int32_t enemy_count, Method) {
     run_exp_payout.store(0);
     run_exp_credited.store(0);
     run_success_confirmed.store(false);
+    run_pickup_coins_added.store(false);
+    {
+        int64_t coins = -1;
+        run_pickup_coin_baseline.store(read_fight_coin_count(coins) ? coins : -1);
+    }
     {
         std::lock_guard<std::mutex> lock(run_item_mutex);
         pending_run_items.clear();
@@ -4422,6 +4496,11 @@ Obj end_game_hook(int32_t stage, int64_t score, int32_t bud_count, int32_t perfe
                              rewards, equipment_rewards)) {
         status("fight_failed", last_error); return nullptr;
     }
+    // Ground coins join the run gold before the response and the settlement.
+    if (passed) {
+        const int64_t pickups = victory_pickup_coins(bud_count);
+        if (pickups > 0) run_gold_payout.fetch_add(pickups);
+    }
     int gold_reward = 0, diamond_reward = 0, exp_reward = 0;
     if (passed) {
         const int64_t accumulated = run_gold_payout.load();
@@ -4601,6 +4680,71 @@ bool log_offline_perk_statuses(Obj player_manager, Roots& roots) {
 // shipped FunctionCfg requirements. Rebuild only the progression-based,
 // offline-capable portion of that response from the local save.
 #include "hero_offline.h"
+
+// User-approved offline source for hero fragments (no offline source existed:
+// 1.9.1 delivered them through online offers/events). Each won run adds
+// kinja::kVictoryHeroFragments of HeroCfg.fragment_id for the hero chosen by
+// choose_fragment_hero. The fragments join the EndGame reward list, so they
+// are saved, shown on the original result screen and reconciled by
+// OnItemInit with the other victory items. Any read failure grants nothing.
+void plan_victory_hero_fragments(std::vector<std::pair<int, int>>& rewards) {
+    const std::string saved_error = last_error;
+    Roots roots;
+    auto skip = [&](const char* why) {
+        LOGE("Victory hero fragments skipped: %s %s", why, last_error.c_str());
+        last_error = saved_error;
+    };
+    std::vector<LocalHeroRecord> owned;
+    int selected = 0;
+    if (!read_saved_heroes(load_seed("seed_heroes.json"), owned, selected)) return skip("unreadable hero save");
+    bool menu_open = false;
+    if (!local_hero_function_open(menu_open, roots)) return skip("hero menu state unavailable");
+    Klass hc = find_class("", "HeroManager");
+    Obj hm = hc ? singleton(hc, roots) : nullptr;
+    Method cfg_get = hc ? find_method(hc, "GetHeroCfg", {"System.Int32"}) : nullptr;
+    Method star_get = hc ? find_method(hc, "GetHeroStarCfgOne", {"System.Int32", "System.Int32"}) : nullptr;
+    if (!hm || !cfg_get || !star_get) return skip("original HeroManager APIs unavailable");
+    // Shipped 1.9.1 HeroCfg: starter 1001 plus the two receivable heroes 4002/4003.
+    std::vector<int> ids{1001, 4002, 4003};
+    for (const auto& hero : owned)
+        if (std::find(ids.begin(), ids.end(), hero.id) == ids.end()) ids.push_back(hero.id);
+    std::vector<kinja::FragmentHeroCandidate> candidates;
+    for (int id : ids) {
+        kinja::FragmentHeroCandidate c;
+        c.hero_id = id;
+        int32_t key = id;
+        void* args[] = {&key};
+        Obj cfg = nullptr;
+        if (!invoke(cfg_get, hm, args, "HeroManager.GetHeroCfg victory fragments", &cfg) || !cfg) continue;
+        roots.retain(cfg);
+        int fragment = 0, receivable = 0;
+        if (!hero_cfg_int(cfg, "fragment_id", fragment) || fragment <= 0 || !chapter_reward_item_known(fragment)) continue;
+        c.fragment_id = fragment;
+        c.receivable = hero_cfg_int(cfg, "can_receive", receivable) && receivable == 1;
+        auto mine = std::find_if(owned.begin(), owned.end(), [id](const LocalHeroRecord& h) { return h.id == id; });
+        c.owned = mine != owned.end();
+        if (c.owned) {
+            int32_t next = mine->star + 1;
+            void* star_args[] = {&key, &next};
+            Obj next_cfg = nullptr;
+            c.star_capped = !invoke(star_get, hm, star_args, "Next hero star for victory fragments", &next_cfg) || !next_cfg;
+            if (next_cfg) roots.retain(next_cfg);
+        }
+        candidates.push_back(c);
+    }
+    const int index = kinja::choose_fragment_hero(candidates, selected, menu_open);
+    if (index < 0) return skip("no hero can use fragments");
+    const auto& target = candidates[static_cast<size_t>(index)];
+    auto existing = std::find_if(rewards.begin(), rewards.end(),
+        [&target](const auto& row) { return row.first == target.fragment_id; });
+    if (existing == rewards.end()) rewards.emplace_back(target.fragment_id, kinja::kVictoryHeroFragments);
+    else if (existing->second <= INT32_MAX - kinja::kVictoryHeroFragments) existing->second += kinja::kVictoryHeroFragments;
+    else return skip("reward overflow");
+    LOGI("Victory hero fragments hero=%d item=%d count=%d owned=%d menuOpen=%d selected=%d",
+         target.hero_id, target.fragment_id, kinja::kVictoryHeroFragments, target.owned ? 1 : 0,
+         menu_open ? 1 : 0, selected);
+    last_error = saved_error;
+}
 
 bool read_local_menu_progress(std::string& regions, bool& chapter1_passed, bool& chapter2_passed) {
     chapter1_passed = chapter2_passed = false;
