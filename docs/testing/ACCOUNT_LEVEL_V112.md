@@ -1,5 +1,7 @@
 # Nível da conta — v112, 03/11/2026
 
+**Registro histórico, substituído por [ACCOUNT_LEVEL_QA_V116](ACCOUNT_LEVEL_QA_V116.md).**
+
 **Atualização posterior:** os testes com saves artificiais autorizados validaram migração, crédito com passagem de nível e reinício, mas encontraram uma leitura incorreta de ObscuredInt na v112. Corrigida na **v116 normal**, que substitui a v112. [Resultados e artefatos QA](ACCOUNT_LEVEL_QA_V116.md). As pendências abaixo descrevem o estado anterior a esses testes.
 
 ## Evidência e causa

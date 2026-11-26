@@ -1,5 +1,7 @@
 # Manual do Herói — auditoria da obtenção na v126
 
+**Registro histórico, substituído por [HERO_QA_COMBAT_V127](HERO_QA_COMBAT_V127.md) e [COMBAT_INVENTORY_V129](COMBAT_INVENTORY_V129.md).**
+
 Em03/11/2026, o usuário relatou teste positivo do jogo com novos heróis. Evidência por relato; não confundir com uma bateria instrumental de todos os heróis. Solicitou validar a obtenção do recurso de evolução antes de seguir ao tutorial.
 
 ## Resultado
