@@ -11,7 +11,8 @@ final class BackupStore {
     static final String CLIENT = "kinja-1.9.1-7953eb369ba9b8c814c4736dac4a7e3aa116a5583837f6f12d795ea70c20595e/offline-save-1";
     static final String[] FILES = {"seed_player.json", "seed_regions.json", "seed_items.json",
         "seed_equipment.json", "seed_talents.json", "seed_heroes.json", "seed_guide.json",
-        "seed_shop_chests.json", "hangup_local_state.json", "shop_daily_claim.json", "local_preferences.json"};
+        "seed_shop_chests.json", "hangup_local_state.json", "shop_daily_claim.json", "local_preferences.json",
+        "chapter_rewards.json"};
     static final String[] JOURNALS = {"talent_purchase_pending.json", "equip_upgrade_pending",
         "chest_purchase_pending", "hero_pending", "shop_daily_claim_pending.json"};
     interface Disk {
@@ -289,6 +290,13 @@ final class BackupStore {
         if (!chests.containsAll(Arrays.asList(101L,108L,115L))) throw invalid();
         if (models.containsKey(FILES[8])) { Map<String,Object> v=models.get(FILES[8]); num(v,"LastClaim",1,Long.MAX_VALUE); num(v,"QuickReturnDay",0,Long.MAX_VALUE); num(v,"QuickReturnCount",0,3); }
         if (models.containsKey(FILES[9])) { Map<String,Object> v=models.get(FILES[9]); num(v,"Date",20000101,99991231); if(!bool(v,"Claimed") || num(v,"Amount",4000,4000)!=4000)throw invalid(); }
+        if (models.containsKey(FILES[11])) {
+            // Chapter first-win/milestone claims: RegionId*100+slot, slot 0..98, unique.
+            Map<String,Object> v=models.get(FILES[11]); if(v.size()!=2 || num(v,"Version",1,1)!=1)throw invalid();
+            Set<Long> claims=new HashSet<>();
+            for(Object c:list(v,"Claims")){ if(!(c instanceof Long))throw invalid(); long claim=(Long)c;
+                if(claim<100 || claim%100>98 || !BackupCatalog.has(BackupCatalog.REGIONS,claim/100) || !claims.add(claim))throw invalid(); }
+        }
         Set<String> keys=new HashSet<>();
         for(Object entry:list(models.get(FILES[10]),"Values")) {
             Map<String,Object> v=obj(entry); Object key=v.get("Key");

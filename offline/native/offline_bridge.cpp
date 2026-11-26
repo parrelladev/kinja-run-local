@@ -33,7 +33,9 @@
 #include "fusion_batch_plan.h"
 #include "account_progression.h"
 #include "combat_exp.h"
+#include "chapter_rewards.h"
 #include "backup_regions.h"
+#include "backup_items.h"
 
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "KinjaOffline", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "KinjaOffline", __VA_ARGS__)
@@ -83,6 +85,9 @@ struct Api {
     void (*free)(void*) = nullptr;
     void (*format_exception)(Obj, char*, int) = nullptr;
     void (*format_stack_trace)(Obj, char*, int) = nullptr;
+    // Optional, diagnostic only: schema logging of configuration rows.
+    Field (*class_get_fields)(Klass, void**) = nullptr;
+    const char* (*field_get_name)(Field) = nullptr;
 } api;
 
 std::mutex config_mutex;
@@ -239,6 +244,8 @@ bool load_api(void* library) {
     // These diagnostic exports are optional; managed exception class names still get logged.
     api.format_exception = reinterpret_cast<decltype(api.format_exception)>(dlsym(library, "il2cpp_format_exception"));
     api.format_stack_trace = reinterpret_cast<decltype(api.format_stack_trace)>(dlsym(library, "il2cpp_format_stack_trace"));
+    api.class_get_fields = reinterpret_cast<decltype(api.class_get_fields)>(dlsym(library, "il2cpp_class_get_fields"));
+    api.field_get_name = reinterpret_cast<decltype(api.field_get_name)>(dlsym(library, "il2cpp_field_get_name"));
     return ok;
 }
 
@@ -895,6 +902,451 @@ Obj make_end_response(int region, bool passed, bool new_score, bool first_win, b
     return roots.retain(response);
 }
 
+// ---------------------------------------------------------------------------
+// Configured chapter clear rewards (first win + progress milestones).
+// The retired server granted GameRegion.first_win_reward and every
+// GameRegion.progress_reward (RewardCfg item_ids such as "40001_2", the blue
+// talent crystals). Earlier offline builds hard-coded only regions 2/3, so
+// later chapters never paid them. Rows are read through the original 1.9.1
+// tables on the Unity thread; nothing here patches code or writes offsets.
+// Claims are kept in offline_save/chapter_rewards.json (exported by Backup).
+// A slot whose configuration cannot be understood stays unclaimed and is
+// retried on the next bootstrap, never guessed.
+// ---------------------------------------------------------------------------
+std::string chapter_ledger_path() { return files_dir + "/offline_save/chapter_rewards.json"; }
+
+struct ChapterCfgApi {
+    bool attempted = false;
+    Klass region_class = nullptr;
+    Klass reward_class = nullptr;
+    Method region_get = nullptr;
+    Method reward_get = nullptr;
+} chapter_cfg_api;
+
+void log_config_schema(Klass klass, const char* label) {
+    if (!klass || !api.class_get_fields || !api.field_get_name) return;
+    std::string fields;
+    void* iterator = nullptr;
+    while (Field field = api.class_get_fields(klass, &iterator)) {
+        const char* name = api.field_get_name(field);
+        if (!fields.empty()) fields += ", ";
+        fields += std::string(name ? name : "?") + ":" + type_name(api.field_get_type(field));
+        if (fields.size() > 1500) { fields += ", ..."; break; }
+    }
+    LOGI("Config schema %s (%s): %s", label, class_name(klass).c_str(), fields.c_str());
+}
+
+bool resolve_chapter_cfg_api() {
+    if (chapter_cfg_api.region_get && chapter_cfg_api.reward_get) return true;
+    // Retried on later calls (tables may load after bootstrap); schema logged once.
+    const bool first_attempt = !chapter_cfg_api.attempted;
+    chapter_cfg_api.attempted = true;
+    const std::string saved_error = last_error;
+    // 1.9.1 table classes drop the "CfgData" file suffix (MonsterCfgData -> Monster).
+    for (const char* name : {"GameRegion", "GameRegionCfg"})
+        if (!chapter_cfg_api.region_class) chapter_cfg_api.region_class = find_class("", name);
+    for (const char* name : {"Reward", "RewardCfg"})
+        if (!chapter_cfg_api.reward_class) chapter_cfg_api.reward_class = find_class("", name);
+    if (chapter_cfg_api.region_class)
+        chapter_cfg_api.region_get = find_method(chapter_cfg_api.region_class, "GetCfg", {"System.Int32"}, true);
+    if (chapter_cfg_api.reward_class)
+        chapter_cfg_api.reward_get = find_method(chapter_cfg_api.reward_class, "GetCfg", {"System.Int32"}, true);
+    if (first_attempt) {
+        log_config_schema(chapter_cfg_api.region_class, "chapter region");
+        log_config_schema(chapter_cfg_api.reward_class, "chapter reward");
+    }
+    last_error = saved_error;
+    if (!chapter_cfg_api.region_get || !chapter_cfg_api.reward_get) {
+        LOGE("Chapter reward tables unavailable region=%p/%p reward=%p/%p; chapter rewards stay owed",
+             chapter_cfg_api.region_class, chapter_cfg_api.region_get,
+             chapter_cfg_api.reward_class, chapter_cfg_api.reward_get);
+        return false;
+    }
+    return true;
+}
+
+bool read_cfg_int(Obj cfg, const char* name, int32_t& value, bool optional = false) {
+    Field field = api.class_get_field_from_name(api.object_get_class(cfg), name);
+    if (!field) {
+        if (!optional) LOGE("Chapter config field %s missing", name);
+        return false;
+    }
+    const std::string type = type_name(api.field_get_type(field));
+    if (type != "System.Int32") { LOGE("Chapter config field %s has type %s", name, type.c_str()); return false; }
+    api.field_get_value(cfg, field, &value);
+    return true;
+}
+
+// Reads a managed int[]/string[] or List<int>/List<string> through original
+// System.Array / List APIs. Returns the element objects (boxed ints or strings).
+bool read_cfg_sequence(Obj cfg, const char* name, const char* element, std::vector<Obj>& values,
+                       Roots& roots, bool& present) {
+    values.clear();
+    present = false;
+    Field field = api.class_get_field_from_name(api.object_get_class(cfg), name);
+    if (!field) return true;
+    present = true;
+    const std::string type = type_name(api.field_get_type(field));
+    const bool is_array = type == std::string(element) + "[]";
+    const bool is_list = type == std::string("System.Collections.Generic.List<") + element + ">";
+    if (!is_array && !is_list) { LOGE("Chapter config field %s has type %s", name, type.c_str()); return false; }
+    Obj sequence = nullptr;
+    api.field_get_value(cfg, field, &sequence);
+    if (!sequence) return true;
+    roots.retain(sequence);
+    Klass klass = api.object_get_class(sequence);
+    Method count_method = find_method(klass, is_array ? "get_Length" : "get_Count", {}, true);
+    Method item_method = find_method(klass, is_array ? "GetValue" : "get_Item", {"System.Int32"}, true);
+    Obj boxed_count = nullptr;
+    if (!count_method || !item_method ||
+        !invoke(count_method, sequence, nullptr, std::string("Chapter config count ") + name, &boxed_count) ||
+        !boxed_count || !api.object_unbox(boxed_count)) return false;
+    roots.retain(boxed_count);
+    const int32_t count = *static_cast<int32_t*>(api.object_unbox(boxed_count));
+    if (count < 0 || count > kinja::kChapterMaxSlot) { LOGE("Chapter config field %s length=%d", name, count); return false; }
+    for (int32_t i = 0; i < count; ++i) {
+        Obj value = nullptr;
+        void* args[] = {&i};
+        if (!invoke(item_method, sequence, args, std::string("Chapter config item ") + name, &value)) return false;
+        values.push_back(roots.retain(value));
+    }
+    return true;
+}
+
+bool managed_int(Obj boxed, int32_t& value) {
+    if (!boxed || type_name(api.class_get_type(api.object_get_class(boxed))) != "System.Int32") return false;
+    void* raw = api.object_unbox(boxed);
+    if (!raw) return false;
+    value = *static_cast<int32_t*>(raw);
+    return true;
+}
+
+bool managed_ascii(Obj text, std::string& value) {
+    if (!text || class_name(api.object_get_class(text)) != "System.String") return false;
+    const int32_t length = api.string_length(text);
+    const uint16_t* chars = api.string_chars(text);
+    if (length < 0 || length > 256 || (length && !chars)) return false;
+    value.clear();
+    for (int32_t i = 0; i < length; ++i) {
+        if (chars[i] == 0 || chars[i] > 127) return false;
+        value += static_cast<char>(chars[i]);
+    }
+    return true;
+}
+
+// Only grant IDs the original ItemCfg (and therefore the Backup validator) knows.
+bool chapter_reward_item_known(int item_id) {
+    return std::find(std::begin(backup_item_ids), std::end(backup_item_ids), item_id) != std::end(backup_item_ids);
+}
+
+void resolve_chapter_reward_id(int32_t reward_id, kinja::ChapterSlotRewards& slot, Roots& roots) {
+    slot.resolved = false;
+    slot.grants.clear();
+    if (reward_id == 0) { slot.resolved = true; return; }
+    Obj cfg = nullptr;
+    void* args[] = {&reward_id};
+    if (reward_id < 0 || !invoke(chapter_cfg_api.reward_get, nullptr, args, "Reward.GetCfg chapter reward", &cfg) || !cfg) {
+        LOGE("Chapter reward row %d unavailable; slot stays owed", reward_id);
+        return;
+    }
+    roots.retain(cfg);
+    // Equipment/hero payloads have no verified offline delivery here: keep them owed.
+    for (const char* unsupported : {"equip_ids", "equips", "equip_id", "hero_ids"}) {
+        Field field = api.class_get_field_from_name(api.object_get_class(cfg), unsupported);
+        if (!field) continue;
+        Obj value = nullptr;
+        if (type_name(api.field_get_type(field)) == "System.Int32") {
+            int32_t id = 0;
+            api.field_get_value(cfg, field, &id);
+            if (id != 0) { LOGE("Chapter reward %d has unsupported %s=%d; slot stays owed", reward_id, unsupported, id); return; }
+            continue;
+        }
+        std::vector<Obj> entries;
+        bool present = false;
+        api.field_get_value(cfg, field, &value);
+        if (!value) continue;
+        const std::string type = type_name(api.field_get_type(field));
+        const char* element = type.find("System.String") != std::string::npos ? "System.String" : "System.Int32";
+        if (!read_cfg_sequence(cfg, unsupported, element, entries, roots, present) || !entries.empty()) {
+            LOGE("Chapter reward %d has unsupported %s payload (%s); slot stays owed", reward_id, unsupported, type.c_str());
+            return;
+        }
+    }
+    std::vector<Obj> tokens;
+    bool present = false;
+    if (!read_cfg_sequence(cfg, "item_ids", "System.String", tokens, roots, present) || !present) {
+        LOGE("Chapter reward %d has no readable item_ids; slot stays owed", reward_id);
+        return;
+    }
+    for (Obj token_object : tokens) {
+        std::string token;
+        kinja::RewardGrant grant{};
+        if (!managed_ascii(token_object, token) || !kinja::parse_fixed_reward_token(token, grant) ||
+            !chapter_reward_item_known(grant.item_id) || !kinja::merge_reward_grant(slot.grants, grant)) {
+            LOGE("Chapter reward %d token '%s' is not a fixed ItemId_Count reward; slot stays owed",
+                 reward_id, token.c_str());
+            slot.grants.clear();
+            return;
+        }
+    }
+    slot.resolved = true;
+}
+
+// Returns false only when the region row itself cannot be read.
+bool read_chapter_slots(int region, std::vector<kinja::ChapterSlotRewards>& slots) {
+    slots.clear();
+    if (!resolve_chapter_cfg_api()) return false;
+    Roots roots;
+    const std::string saved_error = last_error;
+    Obj cfg = nullptr;
+    int32_t region_id = region;
+    void* args[] = {&region_id};
+    if (!invoke(chapter_cfg_api.region_get, nullptr, args, "GameRegion.GetCfg chapter rewards", &cfg) || !cfg) {
+        last_error = saved_error;
+        LOGE("GameRegion row %d unavailable; chapter rewards stay owed", region);
+        return false;
+    }
+    roots.retain(cfg);
+
+    kinja::ChapterSlotRewards first;
+    first.slot = 0;
+    int32_t first_type = 0, first_reward = 0, first_count = 1;
+    if (read_cfg_int(cfg, "first_win_reward_type", first_type) && read_cfg_int(cfg, "first_win_reward", first_reward)) {
+        int32_t configured_count = 0;
+        for (const char* name : {"first_win_reward_num", "first_win_reward_count"})
+            if (read_cfg_int(cfg, name, configured_count, true) && configured_count > 0) first_count = configured_count;
+        if (first_reward == 0) first.resolved = true;
+        else if (first_type == 1 && first_reward > 0 && chapter_reward_item_known(first_reward)) {
+            // Type 1 is an item ID: region 2 -> bronze key 100001, region 3 -> silver key 100002.
+            first.grants.push_back({first_reward, first_count});
+            first.resolved = true;
+        } else if (first_reward > 0) {
+            // Other types are reward-table IDs or unknown; only accept a fixed Reward row.
+            resolve_chapter_reward_id(first_reward, first, roots);
+            if (!first.resolved)
+                LOGE("Region %d first-win reward type=%d id=%d not supported offline; stays owed",
+                     region, first_type, first_reward);
+        }
+    }
+    slots.push_back(first);
+
+    std::vector<Obj> thresholds, rewards;
+    bool has_thresholds = false, has_rewards = false;
+    const bool thresholds_ok = read_cfg_sequence(cfg, "progress", "System.Int32", thresholds, roots, has_thresholds);
+    const bool rewards_ok = read_cfg_sequence(cfg, "progress_reward", "System.Int32", rewards, roots, has_rewards);
+    if (!rewards_ok || !has_rewards) {
+        LOGE("Region %d progress_reward unreadable; milestone rewards stay owed", region);
+    } else {
+        const bool shape_ok = thresholds_ok && (!has_thresholds || thresholds.size() == rewards.size());
+        for (size_t i = 0; i < rewards.size(); ++i) {
+            kinja::ChapterSlotRewards slot;
+            slot.slot = static_cast<int>(i) + 1;
+            int32_t reward_id = 0, threshold = 100;
+            if (has_thresholds && i < thresholds.size() && !managed_int(thresholds[i], threshold)) threshold = -1;
+            if (shape_ok && managed_int(rewards[i], reward_id) && threshold >= 0 && threshold <= 100)
+                resolve_chapter_reward_id(reward_id, slot, roots);
+            else
+                LOGE("Region %d milestone %zu malformed (threshold=%d); stays owed", region, i, threshold);
+            // Offline policy: every configured milestone (<=100%) is paid on the first full clear.
+            slots.push_back(slot);
+        }
+    }
+    last_error = saved_error;
+    return true;
+}
+
+bool saved_passed_regions(const std::string& json, std::vector<int>& passed) {
+    passed.clear();
+    size_t array = json_member_value(json, "RegionsInfo");
+    if (array == std::string::npos || array >= json.size() || json[array] != '[') return false;
+    size_t scan = array + 1;
+    while ((scan = json.find("\"RegionId\"", scan)) != std::string::npos) {
+        size_t start = json.rfind('{', scan);
+        if (start == std::string::npos || start < array) return false;
+        size_t end = json_object_end(json, start);
+        if (end == std::string::npos) return false;
+        const std::string object = json.substr(start, end - start);
+        int64_t id = 0;
+        bool is_pass = false;
+        if (!json_read_int(object, "RegionId", id) || !json_read_bool(object, "IsPass", is_pass)) return false;
+        if (is_pass && id > 0 && id <= INT32_MAX) passed.push_back(static_cast<int>(id));
+        scan = end;
+    }
+    return true;
+}
+
+// Loads the claim ledger. A missing ledger means the save predates it:
+// rebuild the claims the legacy hard-coded rewards already paid.
+bool load_chapter_ledger(const std::string& regions_before, kinja::ChapterLedger& ledger, bool& created) {
+    created = false;
+    std::string text;
+    struct stat info{};
+    if (stat(chapter_ledger_path().c_str(), &info) == 0) {
+        std::ifstream stream(chapter_ledger_path(), std::ios::binary);
+        text.assign(std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>());
+        if (!stream.good() && !stream.eof()) return fail("Cannot read chapter reward ledger");
+        if (!kinja::parse_chapter_ledger(text, ledger))
+            return fail("Chapter reward ledger is malformed; refusing chapter rewards to avoid duplicates");
+        return true;
+    }
+    std::vector<int> passed;
+    if (!saved_passed_regions(regions_before, passed)) return fail("Cannot read passed regions for chapter ledger");
+    ledger = kinja::ChapterLedger{};
+    kinja::add_legacy_chapter_claims(passed, ledger);
+    created = true;
+    LOGI("Chapter reward ledger created from legacy save: passedRegions=%zu legacyClaims=%zu",
+         passed.size(), ledger.claims.size());
+    return true;
+}
+
+bool add_chapter_currency(std::string& player, const char* key, int amount) {
+    if (amount == 0) return true;
+    int64_t value = 0;
+    if (!json_read_int(player, key, value) || value < 0 || value > INT32_MAX - amount) return false;
+    return json_set_int(player, key, value + amount);
+}
+
+std::string describe_grants(const std::vector<kinja::RewardGrant>& grants) {
+    std::string text;
+    for (const auto& g : grants) text += (text.empty() ? "" : ",") + std::to_string(g.item_id) + "x" + std::to_string(g.count);
+    return text.empty() ? "none" : text;
+}
+
+// Bootstrap: pay every owed slot of regions already passed. Runs before the
+// seed models are deserialized, so the original managers load the new totals.
+// Never blocks login: failures are logged and the slots stay owed.
+bool settle_saved_chapter_rewards() {
+    std::string regions = load_seed("seed_regions.json");
+    std::string items = load_seed("seed_items.json");
+    std::string player = load_seed("seed_player.json");
+    if (regions.empty() || items.empty() || player.empty()) { LOGE("Chapter rewards skipped: saves unavailable"); return true; }
+    kinja::ChapterLedger ledger;
+    bool created = false;
+    if (!load_chapter_ledger(regions, ledger, created)) { LOGE("Chapter rewards skipped: %s", last_error.c_str()); return true; }
+    std::vector<int> passed;
+    if (!saved_passed_regions(regions, passed)) { LOGE("Chapter rewards skipped: cannot list passed regions"); return true; }
+    std::vector<kinja::RewardGrant> grants;
+    std::vector<int> claims;
+    int owed = 0;
+    for (int region : passed) {
+        std::vector<kinja::ChapterSlotRewards> slots;
+        if (!read_chapter_slots(region, slots)) { ++owed; continue; }
+        kinja::ChapterSettlement plan;
+        if (!kinja::plan_chapter_settlement(region, slots, ledger, plan)) {
+            LOGE("Invalid chapter reward plan for region %d; stays owed", region);
+            ++owed;
+            continue;
+        }
+        bool merged = true;
+        for (const auto& grant : plan.grants) merged = kinja::merge_reward_grant(grants, grant) && merged;
+        if (!merged) { LOGE("Chapter reward overflow at region %d; stays owed", region); ++owed; continue; }
+        owed += plan.unresolved_slots;
+        claims.insert(claims.end(), plan.new_claims.begin(), plan.new_claims.end());
+        if (!plan.new_claims.empty())
+            LOGI("Chapter rewards owed region=%d claims=%zu grants=%s unresolved=%d", region,
+                 plan.new_claims.size(), describe_grants(plan.grants).c_str(), plan.unresolved_slots);
+    }
+    if (claims.empty() && !created) {
+        if (owed) LOGI("Chapter rewards: nothing new; %d slot(s) still unreadable/owed", owed);
+        return true;
+    }
+    int gold = 0, diamonds = 0, exp = 0;
+    for (const auto& grant : grants) {
+        bool ok = true;
+        if (grant.item_id == 101) ok = gold <= INT32_MAX - grant.count && (gold += grant.count, true);
+        else if (grant.item_id == 102) ok = diamonds <= INT32_MAX - grant.count && (diamonds += grant.count, true);
+        else if (grant.item_id == 104) ok = exp <= INT32_MAX - grant.count && (exp += grant.count, true);
+        else ok = json_add_item(items, "ItemsInfo", grant.item_id, grant.count, "ItemId", "Count");
+        if (!ok) { LOGE("Cannot stage chapter reward item=%d; nothing applied", grant.item_id); return true; }
+    }
+    if (!add_chapter_currency(player, "Coin", gold) || !add_chapter_currency(player, "Diamond", diamonds) ||
+        !add_chapter_currency(player, "Exp", exp)) {
+        LOGE("Cannot stage chapter currency rewards; nothing applied");
+        return true;
+    }
+    for (int claim : claims) ledger.claims.insert(claim);
+    // Ledger first: an interrupted write can lose a reward, never pay it twice.
+    if (!write_file(chapter_ledger_path(), kinja::serialize_chapter_ledger(ledger))) {
+        LOGE("Cannot persist chapter reward ledger; owed rewards not applied this launch");
+        return true;
+    }
+    if (!grants.empty() &&
+        (!write_file(files_dir + "/offline_save/seed_items.json", items) ||
+         !write_file(files_dir + "/offline_save/seed_player.json", player))) {
+        LOGE("Chapter reward ledger saved but rewards could not be written; not retried to avoid duplicates");
+        return true;
+    }
+    LOGI("Chapter rewards settled at bootstrap: newClaims=%zu grants=%s gold=%d diamonds=%d exp=%d stillOwed=%d ledgerCreated=%d",
+         claims.size(), describe_grants(grants).c_str(), gold, diamonds, exp, owed, created ? 1 : 0);
+    return true;
+}
+
+// Victory: plan the configured rewards of the cleared region. Item grants are
+// appended to the EndGame reward list (persisted and shown by the original
+// result screen); 101/102/104 are returned for the run currency settlement.
+struct ChapterClearRewards {
+    bool ledger_changed = false;
+    kinja::ChapterLedger ledger;
+    int gold = 0, diamonds = 0, exp = 0;
+    std::vector<int> claims;
+};
+
+void plan_cleared_chapter_rewards(int region, const std::string& regions_before, bool first_win,
+                                  std::vector<std::pair<int, int>>& rewards, ChapterClearRewards& out) {
+    const std::string saved_error = last_error;
+    bool created = false;
+    if (!load_chapter_ledger(regions_before, out.ledger, created)) {
+        LOGE("Chapter rewards for region %d skipped: %s", region, last_error.c_str());
+        last_error = saved_error;
+        return;
+    }
+    std::vector<kinja::ChapterSlotRewards> slots;
+    if (!read_chapter_slots(region, slots)) {
+        // Preserve the previous behaviour when the table cannot be read.
+        if (region == 2 || region == 3) {
+            slots.clear();
+            kinja::ChapterSlotRewards first; first.slot = 0; first.resolved = first_win;
+            if (first_win) first.grants.push_back({region == 2 ? 100001 : 100002, 1});
+            slots.push_back(first);
+            if (region == 2) { kinja::ChapterSlotRewards milestone; milestone.slot = 1; milestone.resolved = true;
+                               milestone.grants.push_back({40001, 2}); slots.push_back(milestone); }
+            LOGE("Region %d chapter table unreadable; using legacy configured rewards", region);
+        } else {
+            last_error = saved_error;
+            return;
+        }
+    }
+    kinja::ChapterSettlement plan;
+    if (!kinja::plan_chapter_settlement(region, slots, out.ledger, plan)) {
+        LOGE("Invalid chapter reward plan for cleared region %d", region);
+        last_error = saved_error;
+        return;
+    }
+    for (const auto& grant : plan.grants) {
+        bool ok = true;
+        if (grant.item_id == 101) ok = out.gold <= INT32_MAX - grant.count && (out.gold += grant.count, true);
+        else if (grant.item_id == 102) ok = out.diamonds <= INT32_MAX - grant.count && (out.diamonds += grant.count, true);
+        else if (grant.item_id == 104) ok = out.exp <= INT32_MAX - grant.count && (out.exp += grant.count, true);
+        if (!ok) { LOGE("Chapter currency overflow at region %d", region); out = ChapterClearRewards{}; last_error = saved_error; return; }
+    }
+    std::vector<std::pair<int, int>> merged = rewards;
+    for (const auto& grant : plan.grants) {
+        if (grant.item_id == 101 || grant.item_id == 102 || grant.item_id == 104) continue;
+        auto existing = std::find_if(merged.begin(), merged.end(),
+            [&grant](const auto& row) { return row.first == grant.item_id; });
+        if (existing == merged.end()) merged.emplace_back(grant.item_id, grant.count);
+        else if (existing->second <= INT32_MAX - grant.count) existing->second += grant.count;
+        else { LOGE("Chapter reward merge overflow item=%d", grant.item_id); out = ChapterClearRewards{}; last_error = saved_error; return; }
+    }
+    rewards.swap(merged);
+    out.claims = plan.new_claims;
+    for (int claim : plan.new_claims) out.ledger.claims.insert(claim);
+    out.ledger_changed = created || !plan.new_claims.empty();
+    LOGI("Chapter clear rewards region=%d firstWin=%d claims=%zu grants=%s unresolved=%d",
+         region, first_win ? 1 : 0, plan.new_claims.size(), describe_grants(plan.grants).c_str(), plan.unresolved_slots);
+    last_error = saved_error;
+}
+
 bool persist_local_clear(int region, int64_t score, bool passed, bool& first_win, bool& new_score,
                          bool& milestone, bool& new_chapter,
                          std::vector<std::pair<int, int>>& rewards,
@@ -902,6 +1354,7 @@ bool persist_local_clear(int region, int64_t score, bool passed, bool& first_win
     std::string regions = load_seed("seed_regions.json");
     std::string items = load_seed("seed_items.json");
     if (regions.empty() || items.empty()) return false;
+    const std::string regions_before = regions;
     bool was_passed = false;
     int64_t old_score = 0, old_progress = 0;
     if (!json_read_int(regions, "MaxRegionProgress", old_progress) ||
@@ -913,20 +1366,29 @@ bool persist_local_clear(int region, int64_t score, bool passed, bool& first_win
     if (passed && !unlock_next_region(regions, region, new_chapter))
         return fail("Cannot unlock the next local region");
     // Local region 2 is displayed Chapter 1; local region 3 is Chapter 2.
-    // The shipped GameRegionCfg defines region 3's silver chest and 100% gear.
     milestone = passed && region == 2 && old_progress < 100;
     if (milestone && !json_set_int(regions, "MaxRegionProgress", 100)) return fail("Cannot save local region progress");
-    if (first_win && region == 2) rewards.emplace_back(100001, 1);
-    if (first_win && region == 3) rewards.emplace_back(100002, 1);
-    if (milestone) rewards.emplace_back(40001, 2);
+    // Configured GameRegion first-win/progress rewards for every chapter,
+    // once per slot (chapter_rewards.json). Never blocks a saved victory.
+    ChapterClearRewards chapter;
+    if (passed) plan_cleared_chapter_rewards(region, regions_before, first_win, rewards, chapter);
     for (const auto& reward : rewards) {
         if (!json_add_item(items, "ItemsInfo", reward.first, reward.second, "ItemId", "Count"))
             return fail("Cannot update saved offline inventory");
         LOGI("Local reward persisted ItemId=%d Count=%d", reward.first, reward.second);
     }
+    // Ledger before the inventory: an interruption may lose a chapter reward, never duplicate it.
+    if (chapter.ledger_changed &&
+        !write_file(chapter_ledger_path(), kinja::serialize_chapter_ledger(chapter.ledger)))
+        return fail("Cannot persist chapter reward ledger");
     if (!write_file(files_dir + "/offline_save/seed_regions.json", regions) ||
         !write_file(files_dir + "/offline_save/seed_items.json", items))
         return fail("Cannot persist local region and inventory rewards");
+    // Chapter currencies ride on the victory settlement (shown in EndGame and
+    // credited once by settle_completed_run_currency).
+    if (chapter.gold) run_gold_payout.fetch_add(chapter.gold);
+    if (chapter.diamonds) run_diamond_payout.fetch_add(chapter.diamonds);
+    if (chapter.exp) run_exp_payout.fetch_add(chapter.exp);
     return true;
 }
 
@@ -4325,6 +4787,9 @@ bool initialize_original_player(Obj pdm) {
     if (!repair_saved_chapter_progress()) return false;
     // Persist missed clear rewards before deserializing the normal seed models.
     if (!repair_saved_chapter2_rewards()) return false;
+    // Configured chapter first-win/milestone rewards (blue crystals 40001 etc.)
+    // owed by earlier builds; before account normalization so EXP levels up.
+    if (!settle_saved_chapter_rewards()) return false;
     // Normalize existing earned EXP before creating the original player model.
     // Idempotent: retain only the unspent balance and never demote legacy levels.
     if (!repair_saved_account_progress(roots)) return false;
