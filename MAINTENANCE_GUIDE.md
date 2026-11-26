@@ -1,5 +1,11 @@
 # Guia de manutenção do Kinja Run offline
 
+## Recompensas de capítulo (cristais azuis 40001) — código pronto, sem build
+
+[Causa, política, migração e limites](docs/testing/CHAPTER_REWARDS_V151.md). O bridge só pagava as recompensas fixas das regiões 2/3 (chave 100001, 40001 ×2, chave 100002). Os capítulos seguintes nunca pagavam `GameRegion.first_win_reward`/`progress_reward`. O save do usuário (capítulos 1–11 vencidos, 2 cristais no total) confirma isso. A correção lê as tabelas originais por IL2CPP, paga cada slot uma vez (ledger `chapter_rewards.json`, incluído no Backup) e migra saves antigos no boot, sem repetir o que já foi pago. Itens que não são `ItemId_Count` fixos ficam devidos, sem palpite. Validação: só testes de host (planejador, backup) e checagem de sintaxe. **Sem compilação ARM64, APK ou gameplay.** Os nomes `GameRegion`/`Reward` ainda precisam do log `Config schema` no aparelho.
+
+Outros pontos sem progressão observados no mesmo save (não corrigidos): `CumulativeLoginDays` fixo em 1 e `RegTime/LastTime=1`; `ConsecutiveLostCount`/`LostCount` nunca contam derrotas; `DifficultPass` (modo difícil) sem rota offline; tutorial (`GuideIds`) vazio; nenhum fragmento de herói (701001/704002/704003) no inventário.
+
 ## EXP de combate e nível da conta — v150
 
 [Regra, QA e limites](docs/testing/COMBAT_EXP_V150.md). A correção anterior já convertia EXP recebida em níveis, mas `KillEnemy` e `EndGame` offline devolviam EXP zero; jogar fases não movia a barra. Pela regra offline aprovada, comum/elite/boss dão 5/25/50 EXP, liquidada somente em vitória e somente pela diferença ainda não creditada. O cliente recebe o valor no campo original `KillEnemy.Exp`; `EndGame.Exp` mostra o total da run, sem um segundo crédito. QA v149: vitória no Capítulo 1 concedeu 620 EXP e elevou nível 2, 1990/2000 → nível 3, 610/3000, persistente após reinício. A fórmula do servidor original permanece desconhecida. Normal v150 assinada com seeds normais, **não instalada**. Derrota e callback tardio não foram observados em gameplay nesta rodada. As seções históricas abaixo que dizem “EXP de combate não implementada” descrevem builds anteriores.

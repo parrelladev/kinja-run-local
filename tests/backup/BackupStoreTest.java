@@ -57,6 +57,7 @@ public final class BackupStoreTest {
         files.put("hangup_local_state.json","{\"LastClaim\":1700000000,\"QuickReturnDay\":19675,\"QuickReturnCount\":2}".getBytes(StandardCharsets.UTF_8));
         files.put("shop_daily_claim.json","{\"Date\":20261103,\"Claimed\":true,\"Amount\":4000}".getBytes(StandardCharsets.UTF_8));
         files.put("local_preferences.json",prefs(gold==1500?0:1).getBytes(StandardCharsets.UTF_8));
+        if(gold!=1500)files.put("chapter_rewards.json","{\"Version\":1,\"Claims\":[200,201,300,301]}".getBytes(StandardCharsets.UTF_8));
         BackupStore.validate(files);return files;
     }
     static File root(String name,Map<String,byte[]> state)throws Exception{
@@ -103,6 +104,12 @@ public final class BackupStoreTest {
         byte[] legacy=encoded.clone();legacy[11]=1;rehash(legacy);rejects(()->BackupStore.decode(legacy),"incomplete legacy format explicitly incompatible");
         byte[] wrongClient=encoded.clone();wrongClient[16]^=1;rehash(wrongClient);rejects(()->BackupStore.decode(wrongClient),"different client");
         rejects(()->BackupStore.read(new ByteArrayInputStream(new byte[200]),100),"bounded provider read");
+        for(String bad:new String[]{"{\"Version\":2,\"Claims\":[]}","{\"Version\":1,\"Claims\":[200,200]}","{\"Version\":1,\"Claims\":[99]}",
+                "{\"Version\":1,\"Claims\":[299]}","{\"Version\":1,\"Claims\":[99999900]}","{\"Version\":1}","{\"Version\":1,\"Claims\":[200],\"X\":1}"}){
+            Map<String,byte[]> malformed=copy(incoming);malformed.put("chapter_rewards.json",bad.getBytes(StandardCharsets.UTF_8));rejects(()->BackupStore.encode(malformed),"chapter ledger schema "+bad);
+        }
+        Map<String,byte[]> noLedger=copy(incoming);noLedger.remove("chapter_rewards.json");BackupStore.validate(noLedger);
+        check(BackupStore.decode(BackupStore.encode(noLedger)).keySet().equals(noLedger.keySet()),"chapter ledger stays optional");
         Map<String,byte[]> missing=copy(incoming);missing.remove("seed_heroes.json");rejects(()->BackupStore.encode(missing),"missing required model");
         Map<String,byte[]> unknown=copy(incoming);unknown.put("../private.json",new byte[]{1,2});rejects(()->BackupStore.encode(unknown),"path traversal/unknown entry");
         for(String bad:new String[]{"{\"ItemsInfo\":[],\"ItemsInfo\":[]}","{\"ItemsInfo\":null}","{\"ItemsInfo\":[{\"ItemId\":6001,\"Count\":-1}]}","{\"ItemsInfo\":[{\"ItemId\":2147483647,\"Count\":1}]}","{\"ItemsInfo\":[]} trailing"}){

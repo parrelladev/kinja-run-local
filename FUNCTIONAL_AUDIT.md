@@ -1,5 +1,9 @@
 # Auditoria funcional — build offline v31
 
+## Recompensas de capítulo — falha confirmada, correção sem build
+
+[Relatório](docs/testing/CHAPTER_REWARDS_V151.md). Save real do usuário: regiões 2–12 vencidas, 40001 recebido ×2 (1 gasto em `ExtraTalentLevel`), chaves 100001/100002. Causa confirmada no código: recompensas de capítulo fixas só para as regiões 2/3. A correção lê `GameRegion`/`Reward` originais, usa um ledger por slot e migra o save no boot. **Passou:** planejador no host, `BackupStoreTest` (2133 verificações) e sintaxe do bridge. **Não testado:** NDK/APK/instalação/boot/tabelas reais/tela de resultado/reinício.
+
 ## EXP de combate — v150
 
 [Evidência e limites](docs/testing/COMBAT_EXP_V150.md). Regra offline autorizada de 5/25/50 EXP por comum/elite/boss; a fórmula remota original não foi recuperada. O bridge informa `KillEnemy.Exp`, usa `EndGame.Exp` como total da run e credita apenas o delta no saldo da conta após vitória. QA v149 no BlueStacks: Capítulo 1 vencido, 620 EXP, nível 2/1990 → nível 3/610, home e save persistentes após relançar. Testes isolados de taxa/delta/limites de nível passaram. Normal v150 gerada e assinada, **não instalada**; derrota e callback tardio não tiveram gameplay observado. Registros antigos abaixo que indicam EXP de combate zero são históricos.
